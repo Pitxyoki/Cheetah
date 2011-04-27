@@ -1,0 +1,51 @@
+
+
+##MPICH2 stuff:
+#
+#@ node 0:
+# $ mpd --ifhn=192.168.100.X &
+# $ mpdtrace -l (ver port)
+#@ node N:
+# $ mpd --ifhn=192.168.100.N -h 192.168.100.X -p port
+#@ node 0:
+# $ mpirun -configfile myappch
+# $ mpdallexit
+#@ node N:
+# $ mpdcleanup
+
+#Requisitos:
+# /home/luis/OpenCL/lib <- tem ou aponta para dir com libOpenCL.so
+# /home/luis/Faculdade/Tese/workspace/ <- dir com programas
+
+#rank (0,1,2,3) is the (Job Manager, Job Scheduler, ResultCollector, PUManager)
+-recvtimeout 100 -l -env LD_LIBRARY_PATH ~/OpenCL/lib:/opt/cheetah/src-b/libcheetah/  -np 1 /opt/cheetah/src-b/jm-mandelbrot/jm-mandelbrot 1 N --job-scheduler 1  --result-collector 2
+
+-env LD_LIBRARY_PATH ~/OpenCL/lib:/opt/cheetah/src-b/libcheetah-common/ -np 1 /opt/cheetah/src-b/jobscheduler/cheetah-jobscheduler
+-env LD_LIBRARY_PATH ~/OpenCL/lib:/opt/cheetah/src-b/libcheetah-common/ -np 1 /opt/cheetah/src-b/resultscollector/cheetah-resultscollector
+
+#-env LD_LIBRARY_PATH ~/OpenCL/lib:../myLibs/Debug -host 192.168.100.1  -np 1 ../PUManager/Debug/PUManager       --job-scheduler 1
+#-env LD_LIBRARY_PATH ~/OpenCL/lib:../myLibs/Debug -host 192.168.100.10 -np 1 ../PUManager/Debug/PUManager       --job-scheduler 1
+#-env LD_LIBRARY_PATH ~/OpenCL/lib:../myLibs/Debug -host 192.168.100.30 -np 1 ../PUManager/Debug/PUManager       --job-scheduler 1
+-env LD_LIBRARY_PATH ~/OpenCL/lib:/opt/cheetah/src-b/libcheetah-common/ -np 1 /opt/cheetah/src-b/pumanager/cheetah-pumanager       --job-scheduler 1
+
+
+
+
+
+
+
+
+##OpenMPI stuff:
+#-pernode
+#-output-filename <filename>
+#-tag-output
+#-timestamp-output
+#--preload-binary #perceber melhor o que é que faz
+#--preload-files <files>
+#
+#Add this for verbose debugging of mpi: -mca plm_base_verbose 5 --debug-daemons -mca odls_base_verbose 5
+#
+#And here is a MIMD example:
+#mpirun -H aa -np 1 hostname : -H bb,cc -np 2 uptime
+#  ${workspace_loc:JobManager}/Debug/JobManager
+
