@@ -1,0 +1,26 @@
+
+                    Cheetah Distributed Computing Framework                    
+
+This is the Cheetah Distributed Computing Framework.
+TODO: Description of the framework
+
+
+ 1. Contents of this package
+ 2. Instructions for developers
+
+
+Installation and usage instructions for end-users can be found in the INSTALL
+file.
+
+================================================================================
+1. TODO: refer files and directories on the tree
+
+2. TODO: Refer svn repository, https://projectos.fct.unl.pt/svn/di-cheetah/trunk/
+         Refer compilation instructions:
+	   $ mkdir m4 build
+	   $ autoreconf --verbose --force --install
+           $ cd build
+	   $ ../configure CPPFLAGS=-I/home/luis/OpenCL/include LDFLAGS=-L/home/luis/OpenCL/lib --prefix=/opt/cheetah
+	   $ make
+	   $ make install
+	   Program installed @ /opt/cheetah
