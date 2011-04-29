@@ -8,7 +8,7 @@
 #ifndef SCHEDULER_H_
 #define SCHEDULER_H_
 
-#include <constants.h>
+#include "cheetah/cheetah-common.h"
 
 #define OLD_COMPUTATION_WEIGHT (1.0f/2.0f)
 

@@ -1,5 +1,5 @@
 /*
- * constants.h
+ * cheetah-common.h
  *
  * Common data to all components of the Cheetah Framework.
  * - includes, constants, variables, data types & function prototypes
@@ -30,8 +30,8 @@ A FAZER:
  */
 
 
-#ifndef CONSTANTS_H_
-#define CONSTANTS_H_
+#ifndef CHEETAH_COMMON_H_
+#define CHEETAH_COMMON_H_
 
 #define _GNU_SOURCE
 
@@ -367,4 +367,4 @@ int timeval_subtract (struct timeval *result, struct timeval *x, struct timeval 
 
 
 
-#endif /* CONSTANTS_H_ */
+#endif /* CHEETAH_COMMON_H_ */

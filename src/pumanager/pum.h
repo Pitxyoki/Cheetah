@@ -10,7 +10,7 @@
 
 /* INCLUDES */
 #include <math.h>
-#include <constants.h>
+#include "cheetah/cheetah-common.h"
 #include <string.h>
 #include <pthread.h>
 

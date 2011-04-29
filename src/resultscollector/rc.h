@@ -8,7 +8,7 @@
 #ifndef RC_H_
 #define RC_H_
 
-#include <constants.h>
+#include "cheetah/cheetah-common.h"
 #include <search.h>
 
 

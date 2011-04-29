@@ -5,7 +5,7 @@
  *      Author: luis
  */
 
-#include "distribCL.h"
+#include "cheetah/cheetah.h"
 
 /***
  *

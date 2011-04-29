@@ -1,5 +1,5 @@
 /*
- * distribCL.h
+ * cheetah.h
  *
  * API functions visible to the application programmer
  *
@@ -7,10 +7,10 @@
  *      Author: Luís Miguel Picciochi de Oliveira
  */
 
-#ifndef DISTRIBCL_H_
-#define DISTRIBCL_H_
+#ifndef CHEETAH_H_
+#define CHEETAH_H_
 
-#include <constants.h>
+#include <cheetah/cheetah-common.h>
 
 
 int nGlobItems[2];
@@ -94,4 +94,4 @@ JobResults *getResults (Job *job);
 void deleteResults (JobResults *JR);
 
 
-#endif /* DISTRIBCL_H_ */
+#endif /* CHEETAH_H_ */

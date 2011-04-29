@@ -16,7 +16,7 @@
  */
 
 
-#include "constants.h"
+#include "cheetah/cheetah-common.h"
 #include <errno.h>
 #include <stdarg.h>
 
