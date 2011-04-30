@@ -9,12 +9,11 @@
 #define PUM_H_
 
 /* INCLUDES */
-#include <math.h>
 #include "cheetah/cheetah-common.h"
 #include <string.h>
 #include <pthread.h>
-
-
+#include <math.h>
+#include <unistd.h>
 
 /* General functionality */
 

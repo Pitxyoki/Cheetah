@@ -24,12 +24,12 @@ void *PUMReceiver() {
     pos = 0;
     dataSize = 0;
 
-    printf("JS  (%i): Probing PUMs...\n", myid);
+    cheetah_print("Probing PUMs...");
 
     receiveMsg(&dataSize,    1, MPI_INT, MPI_ANY_SOURCE, COMM_TAG_PUONLINE, &status);
 
     /*** A new PU Manager is online ***/
-    printf("JS  (%i): A PUM was detected. Setting up...\n", myid);
+    cheetah_print("A PU-M was detected. Setting up...");
     char *recvb = malloc(dataSize);
     assert(recvb != NULL);
 
@@ -61,13 +61,25 @@ void *PUMReceiver() {
       MPI_Unpack(recvb, dataSize, &pos, &(receivedStruct->availablePUs[i].bandwidth),               1, MPI_DOUBLE,        MPI_COMM_WORLD);
       receivedStruct->availablePUs[i].nTimesUsed = 0;
       receivedStruct->availablePUs[i].reserved = false;
+      
+      char devType[4] = "???";
 
-fprintf(stderr,"DEVICE %i LATENCY: %fs\n", i, receivedStruct->availablePUs[i].latency);
-fprintf(stderr,"DEVICE %i THROUGHPUT: %fs\n", i, receivedStruct->availablePUs[i].throughput);
-fprintf(stderr,"DEVICE %i BANDWIDTH: %fMB/s\n", i, receivedStruct->availablePUs[i].bandwidth);
+      switch(receivedStruct->availablePUs[i].device_type) {
+        case CL_DEVICE_TYPE_CPU: strcpy(devType,"CPU");
+                                 break;
+        case CL_DEVICE_TYPE_GPU: strcpy(devType,"GPU");
+                                 break;
+      }
 
+      cheetah_info_print("Device %i (%s) @ PU-M %i:\n"
+                              "\tLocal Job submission LATENCY:      %fs\n"
+                              "\tProcessing THROUGHPUT (~FLOPS^-1): %fs\n"
+                              "\tHost RAM-to-Device bus BANDWIDTH:  %fMB/s",
+                               i, devType, status.MPI_SOURCE,
+                               receivedStruct->availablePUs[i].latency,
+                               receivedStruct->availablePUs[i].throughput,
+                               receivedStruct->availablePUs[i].bandwidth);
     }
-
 
 
     if (debug_JS)
@@ -75,9 +87,8 @@ fprintf(stderr,"DEVICE %i BANDWIDTH: %fMB/s\n", i, receivedStruct->availablePUs[
 
     free(recvb);
 
-
     /*** Test 1: determine communication latency ***/
-    printf("JS  (%i): Latency tests starting...\n", myid);
+    cheetah_print("Performing link tests with PU-M %i.", status.MPI_SOURCE);
 
     //First ping can take much longer, so we ignore it
     MPI_Isend (NULL, 0, MPI_BYTE, status.MPI_SOURCE, COMM_TAG_PUONLINE, MPI_COMM_WORLD, NULL_REQUEST);
@@ -103,7 +114,7 @@ fprintf(stderr,"DEVICE %i BANDWIDTH: %fMB/s\n", i, receivedStruct->availablePUs[
     double latencyResult = result.tv_sec + (result.tv_usec / 1000000.0);
     latencyResult = latencyResult / ((NUM_JS_LATENCY_TESTS-1)*2);
 
-    printf("JS  (%i): Latency test result with PUM %i: %.6f seconds.\n", myid, status.MPI_SOURCE, latencyResult);
+    cheetah_info_print("Link test result from PU-M %i: Latency: %.6f seconds.", status.MPI_SOURCE, latencyResult);
 
 
     /*** Test 2: determine communication throughput ***/
@@ -126,11 +137,12 @@ fprintf(stderr,"DEVICE %i BANDWIDTH: %fMB/s\n", i, receivedStruct->availablePUs[
 
     double throughputResult = result.tv_sec + (result.tv_usec / 1000000.0);
     throughputResult = (PUM_THROUGHPUT_TEST_SIZE / throughputResult) - latencyResult;
-    printf("JS  (%i): Throughput test result: %.6f MByte/second.\n", myid, throughputResult /(1024*1024));
+    cheetah_info_print("Link test result from PU-M %i: Throughput: %.6f MByte/second.", status.MPI_SOURCE, throughputResult /(1024*1024));
 
 
     setupPUMsStruct(receivedStruct, latencyResult, throughputResult);
-/*    switch (SCHED_WORKLOAD_POLICY) {
+/*    TODO: safe to deprecate?
+      switch (SCHED_WORKLOAD_POLICY) {
       case SCHEDULING_RR:
         setupPUMsStruct_RR(receivedStruct, latencyResult, throughputResult);
       break;
@@ -331,7 +343,7 @@ PUMStruct *selectPUM (Job *job, JobToPUM *jtp) {
 
 void sendJobToPUM (int toRank, JobToPUM *job) {
 
-//  printf("JS  (%i): Sending job to PUM at %i (PU %i).\n", myid, toRank, job->runOn);
+  cheetah_debug_print("Sending job to PU %i @ PU-M %i).", job->runOn, toRank);
   if (debug_JS)
     printJobToPUM(job);
 
@@ -376,8 +388,7 @@ void sendJobToPUM (int toRank, JobToPUM *job) {
 
   MPI_Pack(&(job->returnTo),                     1,    MPI_INT,  buff, sizeofData, &pos, MPI_COMM_WORLD);
 
-  if (debug_JS)
-    printf("JS  (%i): When seding job to PUM, the returnTo argument is: %i\n", myid, job->returnTo);
+  cheetah_debug_print("When seding job to PUM, the returnTo argument is: %i", job->returnTo);
 
 //  printf("JS  (%i): Job size: %i bytes.\n", myid, pos);
   /*** Sending it ***/
@@ -386,7 +397,7 @@ void sendJobToPUM (int toRank, JobToPUM *job) {
   sendMsg(buff, pos, MPI_PACKED, toRank, COMM_TAG_JOBSEND, MPI_STATUS_IGNORE);
 
   free(buff);
-//  printf("JS  (%i): Sent job to PUM at %i (%i bytes).\n", myid, toRank, pos);
+  cheetah_debug_print("Sent job to PU-M at %i (%i bytes).\n", toRank, pos);
 
 
 }
@@ -401,7 +412,7 @@ void returnFailure (Job *job) {
   jobResults.returnStatus = JOB_RETURN_STATUS_FAILURE;
 
 
-  printf("JS (%i):  Sending failure result to RC at %i\n", myid, job->returnTo);
+  cheetah_info_print_error("Sending failure result to RC at %i", job->returnTo);
 
 
   /*** Preparing the data transfer ***/
@@ -426,8 +437,7 @@ void returnFailure (Job *job) {
   MPI_Pack(&(jobResults.returnStatus),                      1, MPI_INT, buff, sizeofData, &pos, MPI_COMM_WORLD);
 
   /*** Sending ***/
-  if (debug_JS)
-    fprintf(stderr, "JS (%i):  Results' packed size: %i, returning to: %i\n", myid, pos, job->returnTo);
+  cheetah_debug_print_error("Results' packed size: %i, returning to: %i", pos, job->returnTo);
   //MPI_Isend(&pos,   1, MPI_INT,    job->returnTo, COMM_TAG_RESULTSEND, MPI_COMM_WORLD, &NULL_REQ);
 
   sendMsg(&pos, 1, MPI_INT, job->returnTo, COMM_TAG_RESULTSEND, MPI_STATUS_IGNORE);
@@ -435,14 +445,13 @@ void returnFailure (Job *job) {
   //MPI_Recv(NULL, 0, MPI_BYTE, job->returnTo, COMM_TAG_RESULTSEND, MPI_COMM_WORLD, &NULL_STATUS);
   receiveMsg(NULL, 0, MPI_BYTE, job->returnTo, COMM_TAG_RESULTSEND, MPI_STATUS_IGNORE);
 
-  if (debug_JS)
-    fprintf(stderr,"JS (%i):  Sent return size. Sending packed result NOW.\n", myid);
+  cheetah_debug_print_error("Sent return size. Sending packed result NOW.");
 
   sendMsg(buff, pos, MPI_PACKED, job->returnTo, COMM_TAG_RESULTSEND, MPI_STATUS_IGNORE);
 
   free(buff);
 
-  printf("JS (%i):  Sent packed result (failure).\n", myid);
+  cheetah_info_print_error("Sent packed result (failure).");
 
 
 }

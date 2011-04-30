@@ -1,8 +1,6 @@
 /*
  * Job Scheduler
  *
- *  Created on: 26 Mar 2010
- *      Author: luis
  */
 
 #include "scheduler.h"
@@ -17,14 +15,14 @@ void parseOpts (int argc, char *argv[]) {
 
 
 int main (int argc, char *argv[]) {
-  initializeComponent("Job Scheduler", argc, argv);
+  initializeComponent("Job Scheduler", "JS", argc, argv);
   parseOpts(argc, argv);
 
 
   pthread_t tpumReceiverv,  tjobReceiver, tjobDispatcher, tPUStatusReceiver;
 
   if (initSched() != 0) {
-    fprintf(stderr,"JS  (%i): Error initializing scheduler.", myid);
+    cheetah_print("Error initializing scheduler.", myid);
     exit(EXIT_FAILURE);
   }
 

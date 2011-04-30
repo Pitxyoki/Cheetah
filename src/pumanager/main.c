@@ -20,7 +20,7 @@ void parseOpts (int argc, char *argv[]) {
 
 
 int main (int argc, char *argv[]) {
-  initializeComponent("PU Manager", argc, argv);
+  initializeComponent("PU Manager", "PU-M", argc, argv);
   parseOpts(argc, argv);
 
 
@@ -34,19 +34,19 @@ int main (int argc, char *argv[]) {
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
-  printf("PUM (%i): Starting internal tests.\n", myid);
+  cheetah_print("Starting internal tests.");
   if (!runPUTests()) {
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
-  printf("PUM (%i): Internal tests finished.\n", myid);
+  cheetah_print("Internal tests finished.");
 
-  printf("PUM (%i): Setting up with Job Scheduler...\n", myid);
+  cheetah_print("Setting up with Job Scheduler...");
   if (!JMSetup()) {
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
-  printf("PUM (%i): Setup with Job Scheduler done.\n",myid);
+  cheetah_print("Setup with Job Scheduler done.");
 
 
   pthread_t tjobReceiver, tjobConsumer;

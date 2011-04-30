@@ -10,6 +10,7 @@
 
 #include "cheetah/cheetah-common.h"
 
+//Weight given to past observed computational time taken for a job of the given category
 #define OLD_COMPUTATION_WEIGHT (1.0f/2.0f)
 
 
@@ -81,6 +82,7 @@ void returnFailure (Job *job);
 int initSched();
 
 void setupPUMsStruct(PUMStruct *receivedStruct, double latencyResult, double throughputResult);
+
 //TODO: this should only return the PUM's ID
 PUMStruct *pickPUWith   (int nPossible,    cl_device_type *possibleList, JobToPUM *jtp);
 PUMStruct *pickPUWithout(int nPossible,    cl_device_type *possibleList, JobToPUM *jtp);

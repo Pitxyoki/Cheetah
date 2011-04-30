@@ -3,8 +3,6 @@
  *
  * API functions visible to the application programmer
  *
- *  Created on: 12 May 2010
- *      Author: Luís Miguel Picciochi de Oliveira
  */
 
 #ifndef CHEETAH_H_

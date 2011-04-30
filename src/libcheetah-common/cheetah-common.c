@@ -1,5 +1,5 @@
 /*
- * utils.c
+ * cheetah-common.c
  *
  * Common data to all components of the Cheetah Framework.
  * - includes, constants, variables, data types & function prototypes
@@ -68,8 +68,8 @@ struct option long_options[] = {
  ------------------------------*/
 
 
-void initializeComponent (char *name, int argc, char *argv[]) {
-  componentName = name;
+void initializeComponent (char *name, char *shortname, int argc, char *argv[]) {
+  componentName = shortname;
   int prov;
   int namelen;
   char processorname[MPI_MAX_PROCESSOR_NAME];
@@ -286,7 +286,7 @@ void cheetah_print (char *message, ...) {
   va_end(ap);
 }
 
-void cheetah_error_print(char *message, ...) {
+void cheetah_print_error(char *message, ...) {
   va_list ap;
   va_start (ap, message);
   cheetah_print_stream(stderr, message, &ap);
@@ -302,7 +302,7 @@ void cheetah_info_print(char *message, ...) {
   va_end(ap);
 }
 
-void cheetah_info_error_print(char *message, ...) {
+void cheetah_info_print_error(char *message, ...) {
   if (!ALLOW_INFO_MESSAGES)
     return;
   va_list ap;
@@ -320,7 +320,7 @@ void cheetah_debug_print(char *message, ...) {
   va_end(ap);
 }
 
-void cheetah_debug_error_print(char *message, ...) {
+void cheetah_debug_print_error(char *message, ...) {
   if (!ALLOW_DEBUG_MESSAGES)
     return;
   va_list ap;

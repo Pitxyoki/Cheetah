@@ -22,7 +22,7 @@ bool createLowProcJob (JobToPUM *job) {
   strcpy(job->startingKernel,"setupLowProcTest");
   job->startingNameSize = strlen(job->startingKernel)+1;
 
-  job->taskSource = fileToString("../PUManager/setupLowProcTest.cl");
+  job->taskSource = fileToString(DATADIR"/pumanager/setupLowProcTest.cl");
   if (job->taskSource == NULL) {
     fprintf(stderr,"FILE NOT FOUND! (while creating LowProcJob)\n");
     return false;
@@ -73,7 +73,7 @@ bool createHighProcJob (JobToPUM *job) {
 
 
 
-  job->taskSource = fileToString("../PUManager/setupHighProcTest.cl");
+  job->taskSource = fileToString(DATADIR"/pumanager/setupHighProcTest.cl");
   if (job->taskSource == NULL) {
     fprintf(stderr,"FILE NOT FOUND! (building setupHighProcTest)\n");
     return false;
@@ -108,7 +108,7 @@ bool createBandwidthTestJob (JobToPUM *job) {
   job->startingKernel = malloc(sizeof("setupBandwidthTest") * sizeof(char));
   strcpy(job->startingKernel, "setupBandwidthTest");
 
-  job->taskSource = fileToString("../PUManager/setupBandwidthTest.cl");
+  job->taskSource = fileToString(DATADIR"/pumanager/setupBandwidthTest.cl");
   if (job->taskSource == NULL) {
     fprintf(stderr,"FILE NOT FOUND! (building setupBandwidthTest)\n");
     return false;
@@ -147,7 +147,7 @@ bool createTestMandelbrot (JobToPUM *job) {
 
 
 
-  job->taskSource = fileToString("../PUManager/mandel.cl");
+  job->taskSource = fileToString(DATADIR"/pumanager/mandel.cl");
   if (job->taskSource == NULL) {
     fprintf(stderr,"FILE NOT FOUND! (building testMandelbrot)\n");
     return false;
@@ -241,7 +241,7 @@ bool createTestFFT (JobToPUM *job) {
   strcpy(job->startingKernel,"kfft");
   job->startingNameSize = strlen(job->startingKernel)+1;
 
-  job->taskSource = fileToString("../PUManager/FFT_Kernels.cl");
+  job->taskSource = fileToString(DATADIR"/pumanager/FFT_Kernels.cl");
   if (job->taskSource == NULL) {
     fprintf(stderr,"FILE NOT FOUND! (building testFFT)\n");
     return false;
@@ -448,9 +448,6 @@ bool verifyFFTResults(JobToPUM *job) {
 }
 
 
-
-
-
 void checkJobResults (JobToPUM *job) {
 
   switch (job->jobID) {
@@ -475,26 +472,39 @@ void checkJobResults (JobToPUM *job) {
       rgb[MAXITER-1][0] = rgb[MAXITER-1][1] = rgb[MAXITER-1][2] = MAXITER;
 
 
+      char fractfname[21];
+      FILE *outputfractal;
+      int fd = -1;
 
-      FILE *fd = fopen ("../PUManager/file.ppm", "w");
-      if (fd == NULL) {
-        fprintf (stderr,"Couldn't open 'file.ppm' for writing! Aborting...\n");
+      strncpy(fractfname, "/tmp/fract.ppmXXXXXX", sizeof(fractfname));
+      fd = mkstemp (fractfname);
+      if (fd == -1) {
+        perror("mkstemp");
         exit (EXIT_FAILURE);
       }
+      outputfractal = fdopen(fd, "w+");
+      if (outputfractal == NULL) {
+        perror("fdopen");
+        unlink(fractfname);
+        close(fd);
+        exit (EXIT_FAILURE);
+      }
+      cheetah_debug_print("Created fractal file successfully");
 
 
       int *p;
 
-      fprintf (fd, "P6\n%d %d\n255\n", 1024, 1024);
+      fprintf (outputfractal, "P6\n%d %d\n255\n", 1024, 1024);
       p = (int *) job->arguments[7];
 
       for (int i = 0; i < 1024*1024; i++) {
-        fputc(rgb[p[i]][0], fd);
-        fputc(rgb[p[i]][1], fd);
-        fputc(rgb[p[i]][2], fd);
+        fputc(rgb[p[i]][0], outputfractal);
+        fputc(rgb[p[i]][1], outputfractal);
+        fputc(rgb[p[i]][2], outputfractal);
       }
-
-      fclose (fd);
+      unlink(fractfname);
+      close(fd);
+      cheetah_debug_print("Deleted fractal file successfully");
 
       break;
     }

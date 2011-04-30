@@ -33,11 +33,11 @@ int BUFBYTES = BUFSIZE*sizeof(char);
 
 bool checkErr(cl_int err, const char * name) {
   if (err != CL_SUCCESS) {
-    fprintf(stderr, "ERROR: %s (%i)\n", name, err);
+    cheetah_print_error("ERROR: %s (%i)", name, err);
     return false;
   }
   else {
-    fprintf(stderr, "No error to print (%s / %i).\n", name, err);
+    cheetah_print_error("No error to print (%s / %i).", name, err);
     return true;
   }
 }
@@ -58,7 +58,7 @@ bool getLocalInfo () {
 
 
   if (numPlatforms <= 0) {
-    fprintf(stderr, "numPlatforms is %i. Please check if an OpenCL environment is correctly installed.\n", numPlatforms);
+    cheetah_print_error("numPlatforms is %i. Please check if an OpenCL environment is correctly installed.", numPlatforms);
     return false;
   }
 
@@ -125,7 +125,7 @@ bool getLocalInfo () {
         case CL_GLOBAL:
         break;
         default:
-          fprintf(stderr,"Error: Unkown local memory type!\n");
+          cheetah_print_error("ERROR: Unkown local memory type!\n");
           return false;
       }
 
@@ -164,7 +164,7 @@ bool getLocalInfo () {
       PUInfoStruct.PUsContexts[PUInfoStruct.nPUs-numDevices + j] = malloc(sizeof(cl_context));
       *(PUInfoStruct.PUsContexts[PUInfoStruct.nPUs-numDevices + j]) = clCreateContext(cps, 1, &(devices[j]), NULL, NULL, &status);
       if (status != CL_SUCCESS) {
-        fprintf(stderr, "clCreateContextFromType failed (%i).\n", status);
+        cheetah_print_error("clCreateContextFromType failed (%i).", status);
         return false;
       }
 
@@ -173,7 +173,7 @@ bool getLocalInfo () {
       //Notice: The following call creates 3 threads on this process, each waiting on a condition variable
       *commandQueue = clCreateCommandQueue(*(PUInfoStruct.PUsContexts[PUInfoStruct.nPUs-numDevices + j]), devices[j], prop, &status);
       if (status != CL_SUCCESS) {
-        fprintf(stderr,"clCreateCommandQueue failed (%i).\n", status);
+        cheetah_print_error("clCreateCommandQueue failed (%i).", status);
         return false;
       }
 
@@ -201,7 +201,7 @@ bool printLocalInfo() {
     return checkErr(status, "clGetPlatformIDs failed.\n");
 
   if (numPlatforms <= 0) {
-    fprintf(stderr, "numPlatforms = %i. Check if an OpenCL environment is correctly installed.\n", numPlatforms);
+    cheetah_print_error("numPlatforms = %i. Check if an OpenCL environment is correctly installed.", numPlatforms);
     return false;
   }
 
@@ -211,50 +211,50 @@ bool printLocalInfo() {
     return checkErr(status, "clGetPlatformIDs failed.\n");
 
   // Iteratate over platforms
-  printf("Number of platforms:\t\t\t\t %i\n", numPlatforms);
+  cheetah_print("Number of platforms:\t\t\t\t %i", numPlatforms);
   for (unsigned int i = 0; i < numPlatforms; i++) {
 
     status = clGetPlatformInfo(platforms[i], CL_PLATFORM_PROFILE, BUFBYTES, charbuf, NULL);
     if (status != CL_SUCCESS)
       return checkErr(status, "clGetPlatformInfo failed (CL_PLATFORM_PROFILE).\n");
-    printf("  Plaform Profile:\t\t\t\t %s\n", charbuf);
+    cheetah_print("  Plaform Profile:\t\t\t\t %s", charbuf);
 
     status = clGetPlatformInfo(platforms[i], CL_PLATFORM_VERSION, BUFBYTES, charbuf, NULL);
     if (status != CL_SUCCESS)
       return checkErr(status, "clGetPlatformInfo failed (CL_PLATFORM_VERSION).\n");
-    printf("  Plaform Version:\t\t\t\t %s\n", charbuf);
+    cheetah_print("  Plaform Version:\t\t\t\t %s", charbuf);
 
     status = clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, BUFBYTES, charbuf, NULL);
     if (status != CL_SUCCESS)
       return checkErr(status, "clGetPlatformInfo failed (CL_PLATFORM_NAME).\n");
-    printf("  Plaform Name:\t\t\t\t\t %s\n", charbuf);
+    cheetah_print("  Plaform Name:\t\t\t\t\t %s", charbuf);
 
     status = clGetPlatformInfo(platforms[i], CL_PLATFORM_VENDOR, BUFBYTES, charbuf, NULL);
     if (status != CL_SUCCESS)
       return checkErr(status, "clGetPlatformInfo failed (CL_PLATFORM_VENDOR).\n");
-    printf("  Plaform Vendor:\t\t\t\t %s\n", charbuf);
+    cheetah_print("  Plaform Vendor:\t\t\t\t %s", charbuf);
 
     status = clGetPlatformInfo(platforms[i], CL_PLATFORM_EXTENSIONS, BUFBYTES, charbuf, NULL);
     if (status != CL_SUCCESS)
       return checkErr(status, "clGetPlatformInfo failed (CL_PLATFORM_EXTENSIONS).\n");
     if (charbuf[0] != '\0')
-      printf("  Plaform Extensions:\t\t\t %s\n", charbuf);
+      cheetah_print("  Plaform Extensions:\t\t\t %s", charbuf);
   }
 
-  printf("\n\n");
+  cheetah_print("\n");
   // Now Iteratate over each platform and its devices
   for (unsigned int i = 0; i< numPlatforms; i++) {
     status = clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, BUFBYTES, charbuf, NULL);
     if (status != CL_SUCCESS)
       return checkErr(status, "clGetPlatformInfo failed (CL_PLATFORM_NAME).\n");
-    printf("  Plaform Name:\t\t\t\t\t %s\n", charbuf);
+    cheetah_print("  Plaform Name:\t\t\t\t\t %s", charbuf);
 
 
     cl_uint numDevices;
     status = clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_ALL, 0, NULL, &numDevices);
     if (status != CL_SUCCESS)
       return checkErr(status, "clGetDeviceIDs failed (CL_DEVICE_TYPE_ALL).\n");
-    printf("Number of devices:\t\t\t\t %i\n", numDevices);
+    cheetah_print("Number of devices:\t\t\t\t %i", numDevices);
 
     cl_device_id devices[numDevices];
 
@@ -264,26 +264,26 @@ bool printLocalInfo() {
 
     for (unsigned int j = 0; j < numDevices; j++) {
 
-      printf("  Device Type:\t\t\t\t\t ");
+      cheetah_print("  Device Type:\t\t\t\t\t ");
       cl_device_type dtype;
       status = clGetDeviceInfo(devices[j], CL_DEVICE_TYPE, sizeof(cl_device_type), &dtype, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_TYPE).\n");
       switch (dtype) {
         case CL_DEVICE_TYPE_ACCELERATOR:
-          printf("CL_DEVICE_TYPE_ACCELERATOR\n");
+          cheetah_print("CL_DEVICE_TYPE_ACCELERATOR");
           break;
         case CL_DEVICE_TYPE_CPU:
-          printf("CL_DEVICE_TYPE_CPU\n");
+          cheetah_print("CL_DEVICE_TYPE_CPU");
           break;
         case CL_DEVICE_TYPE_DEFAULT:
-          printf("CL_DEVICE_TYPE_DEFAULT\n");
+          cheetah_print("CL_DEVICE_TYPE_DEFAULT");
           break;
         case CL_DEVICE_TYPE_GPU:
-          printf("CL_DEVICE_TYPE_GPU\n");
+          cheetah_print("CL_DEVICE_TYPE_GPU");
           break;
         default:
-          fprintf(stderr,"ERROR: Unknown device type!\n");
+          cheetah_print_error("ERROR: Unknown device type!");
           return false;
           break;
       }
@@ -296,152 +296,152 @@ bool printLocalInfo() {
       status = clGetDeviceInfo(devices[j], CL_DEVICE_VENDOR_ID, sizeof(cl_uint), &uintinfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_VENDOR_ID).\n");
-      printf("  Device ID:\t\t\t\t\t %i\n", uintinfo);
+      cheetah_print("  Device ID:\t\t\t\t\t %i", uintinfo);
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &uintinfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_MAX_COMPUTE_UNITS).\n");
-      printf("  Max compute units:\t\t\t\t %i\n", uintinfo);
+      cheetah_print("  Max compute units:\t\t\t\t %i", uintinfo);
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(cl_uint), &uintinfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS).\n");
-      printf("  Max work items dimensions:\t\t\t %i\n", uintinfo);
+      cheetah_print("  Max work items dimensions:\t\t\t %i", uintinfo);
 
       size_t witems[uintinfo];
       status = clGetDeviceInfo(devices[j], CL_DEVICE_MAX_WORK_ITEM_SIZES, uintinfo*sizeof(size_t), witems, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_MAX_WORK_ITEM_SIZES).\n");
       for (cl_uint x = 0; x < uintinfo; x++)
-        printf("    Max work items[%i]:\t\t\t\t %zi\n", x, witems[x]);
+        cheetah_print("    Max work items[%i]:\t\t\t\t %zi", x, witems[x]);
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &sizeinfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_MAX_WORK_GROUP_SIZE).\n");
-      printf("  Max work group size:\t\t\t\t %zi\n", sizeinfo);
+      cheetah_print("  Max work group size:\t\t\t\t %zi", sizeinfo);
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR, sizeof(cl_uint), &uintinfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR).\n");
-      printf("  Preferred vector width char:\t\t\t %i\n", uintinfo);
+      cheetah_print("  Preferred vector width char:\t\t\t %i", uintinfo);
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT, sizeof(cl_uint), &uintinfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT).\n");
-      printf("  Preferred vector width short:\t\t\t %i\n", uintinfo);
+      cheetah_print("  Preferred vector width short:\t\t\t %i", uintinfo);
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT, sizeof(cl_uint), &uintinfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT).\n");
-      printf("  Preferred vector width int:\t\t\t %i\n", uintinfo);
+      cheetah_print("  Preferred vector width int:\t\t\t %i", uintinfo);
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG, sizeof(cl_uint), &uintinfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG).\n");
-      printf("  Preferred vector width long:\t\t\t %i\n", uintinfo);
+      cheetah_print("  Preferred vector width long:\t\t\t %i", uintinfo);
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT, sizeof(cl_uint), &uintinfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT).\n");
-      printf("  Preferred vector width float:\t\t\t %i\n", uintinfo);
+      cheetah_print("  Preferred vector width float:\t\t\t %i", uintinfo);
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE, sizeof(cl_uint), &uintinfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE).\n");
-      printf("  Preferred vector width double:\t\t %i\n", uintinfo);
+      cheetah_print("  Preferred vector width double:\t\t %i", uintinfo);
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(cl_uint), &uintinfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_MAX_CLOCK_FREQUENCY).\n");
-      printf("  Max clock frequency:\t\t\t\t %iMhz\n", uintinfo);
+      cheetah_print("  Max clock frequency:\t\t\t\t %iMhz", uintinfo);
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint), &uintinfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_ADDRESS_BITS).\n");
-      printf("  Address bits:\t\t\t\t\t %i\n", uintinfo);
+      cheetah_print("  Address bits:\t\t\t\t\t %i", uintinfo);
 
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(cl_ulong), &ulonginfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_MAX_MEM_ALLOC_SIZE).\n");
-      printf("  Max memeory allocation:\t\t\t %li\n", ulonginfo);
+      cheetah_print("  Max memeory allocation:\t\t\t %li", ulonginfo);
 
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_IMAGE_SUPPORT, sizeof(cl_bool), &boolinfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_IMAGE_SUPPORT).\n");
-      printf("  Image support:\t\t\t\t %s\n", boolinfo ? "Yes" : "No");
+      cheetah_print("  Image support:\t\t\t\t %s", boolinfo ? "Yes" : "No");
 
       if (boolinfo) {
         status = clGetDeviceInfo(devices[j], CL_DEVICE_MAX_READ_IMAGE_ARGS, sizeof(cl_uint), &uintinfo, NULL);
         if (status != CL_SUCCESS)
           return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_MAX_READ_IMAGE_ARGS).\n");
-        printf("  Max number of images read arguments:\t %i\n", uintinfo);
+        cheetah_print("  Max number of images read arguments:\t %i", uintinfo);
 
         status = clGetDeviceInfo(devices[j], CL_DEVICE_MAX_WRITE_IMAGE_ARGS, sizeof(cl_uint), &uintinfo, NULL);
         if (status != CL_SUCCESS)
           return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_MAX_WRITE_IMAGE_ARGS).\n");
-        printf("  Max number of images write arguments:\t %i\n", uintinfo);
+        cheetah_print("  Max number of images write arguments:\t %i", uintinfo);
 
         status = clGetDeviceInfo(devices[j], CL_DEVICE_IMAGE2D_MAX_WIDTH, sizeof(size_t), &sizeinfo, NULL);
         if (status != CL_SUCCESS)
           return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_IMAGE2D_MAX_WIDTH).\n");
-        printf("  Max image 2D width:\t\t\t %zi\n", sizeinfo);
+        cheetah_print("  Max image 2D width:\t\t\t %zi", sizeinfo);
 
         status = clGetDeviceInfo(devices[j], CL_DEVICE_IMAGE2D_MAX_HEIGHT, sizeof(size_t), &sizeinfo, NULL);
         if (status != CL_SUCCESS)
           return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_IMAGE2D_MAX_HEIGHT).\n");
-        printf("  Max image 2D height:\t\t\t %zi\n", sizeinfo);
+        cheetah_print("  Max image 2D height:\t\t\t %zi", sizeinfo);
 
         status = clGetDeviceInfo(devices[j], CL_DEVICE_IMAGE3D_MAX_WIDTH, sizeof(size_t), &sizeinfo, NULL);
         if (status != CL_SUCCESS)
           return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_IMAGE2D_MAX_WIDTH).\n");
-        printf("  Max image 3D width:\t\t\t %zi\n", sizeinfo);
+        cheetah_print("  Max image 3D width:\t\t\t %zi", sizeinfo);
 
         status = clGetDeviceInfo(devices[j], CL_DEVICE_IMAGE3D_MAX_HEIGHT, sizeof(size_t), &sizeinfo, NULL);
         if (status != CL_SUCCESS)
           return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_IMAGE3D_MAX_HEIGHT).\n");
-        printf("  Max image 3D height:\t %zi\n", sizeinfo);
+        cheetah_print("  Max image 3D height:\t %zi", sizeinfo);
 
         status = clGetDeviceInfo(devices[j], CL_DEVICE_IMAGE3D_MAX_DEPTH, sizeof(size_t), &sizeinfo, NULL);
         if (status != CL_SUCCESS)
           return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_IMAGE3D_MAX_DEPTH).\n");
-        printf("  Max image 3D depth:\t\t\t %zi\n", sizeinfo);
+        cheetah_print("  Max image 3D depth:\t\t\t %zi", sizeinfo);
 
         status = clGetDeviceInfo(devices[j], CL_DEVICE_MAX_SAMPLERS, sizeof(cl_uint), &uintinfo, NULL);
         if (status != CL_SUCCESS)
           return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_MAX_SAMPLERS).\n");
-        printf("  Max samplers within kernel:\t\t %i\n", uintinfo);
+        cheetah_print("  Max samplers within kernel:\t\t %i", uintinfo);
       }
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_MAX_PARAMETER_SIZE, sizeof(size_t), &sizeinfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_MAX_PARAMETER_SIZE).\n");
-      printf("  Max size of kernel argument:\t\t\t %zi\n", sizeinfo);
+      cheetah_print("  Max size of kernel argument:\t\t\t %zi", sizeinfo);
 
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_MEM_BASE_ADDR_ALIGN, sizeof(cl_uint), &uintinfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_MEM_BASE_ADDR_ALIGN).\n");
-      printf("  Alignment (bits) of base address:\t\t %i\n", uintinfo);
+      cheetah_print("  Alignment (bits) of base address:\t\t %i", uintinfo);
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE, sizeof(cl_uint), &uintinfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE).\n");
-      printf("  Minimum alignment (bytes) for any datatype:\t %i\n", uintinfo);
+      cheetah_print("  Minimum alignment (bytes) for any datatype:\t %i", uintinfo);
 
 
       cl_device_fp_config fpinfo;
       status = clGetDeviceInfo(devices[j], CL_DEVICE_SINGLE_FP_CONFIG, sizeof(cl_device_fp_config), &fpinfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_SINGLE_FP_CONFIG).\n");
-      printf("  Single precision floating point capability\n");
-      printf("    Denorms:\t\t\t\t\t %s\n", fpinfo & CL_FP_DENORM ? "Yes" : "No");
-      printf("    Quiet NaNs:\t\t\t\t\t %s\n", fpinfo & CL_FP_INF_NAN ? "Yes" : "No");
-      printf("    Round to nearest even:\t\t\t %s\n", fpinfo & CL_FP_ROUND_TO_NEAREST ? "Yes" : "No");
-      printf("    Round to zero:\t\t\t\t %s\n", fpinfo & CL_FP_ROUND_TO_ZERO ? "Yes" : "No");
-      printf("    Round to +ve and infinity:\t\t\t %s\n", fpinfo & CL_FP_ROUND_TO_INF ? "Yes" : "No");
-      printf("    IEEE754-2008 fused multiply-add:\t\t %s\n", fpinfo & CL_FP_FMA ? "Yes" : "No");
+      cheetah_print("  Single precision floating point capability");
+      cheetah_print("    Denorms:\t\t\t\t\t %s", fpinfo & CL_FP_DENORM ? "Yes" : "No");
+      cheetah_print("    Quiet NaNs:\t\t\t\t\t %s", fpinfo & CL_FP_INF_NAN ? "Yes" : "No");
+      cheetah_print("    Round to nearest even:\t\t\t %s", fpinfo & CL_FP_ROUND_TO_NEAREST ? "Yes" : "No");
+      cheetah_print("    Round to zero:\t\t\t\t %s", fpinfo & CL_FP_ROUND_TO_ZERO ? "Yes" : "No");
+      cheetah_print("    Round to +ve and infinity:\t\t\t %s", fpinfo & CL_FP_ROUND_TO_INF ? "Yes" : "No");
+      cheetah_print("    IEEE754-2008 fused multiply-add:\t\t %s", fpinfo & CL_FP_FMA ? "Yes" : "No");
 
 
       cl_device_mem_cache_type mctype;
@@ -449,148 +449,134 @@ bool printLocalInfo() {
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_GLOBAL_MEM_CACHE_TYPE).\n");
 
-      printf("  Cache type:\t\t\t\t\t ");
-      switch (mctype) {
-        case CL_NONE:
-          printf("None\n");
-        break;
-        case CL_READ_ONLY_CACHE:
-          printf("Read only\n");
-        break;
-        case CL_READ_WRITE_CACHE:
-          printf("Read/Write\n");
-        break;
-      }
+      cheetah_print("  Cache type:\t\t\t\t\t %s",
+                    mctype == CL_NONE? "None" :
+                    mctype == CL_READ_ONLY_CACHE ? "Read only" :
+                    mctype == CL_READ_WRITE_CACHE ? "Read/Write" : "");
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE, sizeof(cl_uint), &uintinfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE).\n");
-      printf("  Cache line size:\t\t\t\t %i\n", uintinfo);
+      cheetah_print("  Cache line size:\t\t\t\t %i", uintinfo);
 
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_GLOBAL_MEM_CACHE_SIZE, sizeof(cl_ulong), &ulonginfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_GLOBAL_MEM_CACHE_SIZE).\n");
-      printf("  Cache size:\t\t\t\t\t %li\n", ulonginfo);
+      cheetah_print("  Cache size:\t\t\t\t\t %li", ulonginfo);
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(cl_ulong), &ulonginfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_GLOBAL_MEM_SIZE).\n");
-      printf("  Global memory size:\t\t\t\t %li\n", ulonginfo);
+      cheetah_print("  Global memory size:\t\t\t\t %li", ulonginfo);
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE, sizeof(cl_ulong), &ulonginfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE).\n");
-      printf("  Constant buffer size:\t\t\t\t %li\n", ulonginfo);
+      cheetah_print("  Constant buffer size:\t\t\t\t %li", ulonginfo);
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_MAX_CONSTANT_ARGS, sizeof(cl_uint), &uintinfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_MAX_CONSTANT_ARGS).\n");
-      printf("  Max number of constant args:\t\t\t %i\n", uintinfo);
+      cheetah_print("  Max number of constant args:\t\t\t %i", uintinfo);
 
       cl_device_local_mem_type lmtype;
       status = clGetDeviceInfo(devices[j], CL_DEVICE_LOCAL_MEM_TYPE, sizeof(cl_device_local_mem_type), &lmtype, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_LOCAL_MEM_TYPE).\n");
-      printf("  Local memory type:\t\t\t\t ");
-      switch (lmtype) {
-        case CL_LOCAL:
-          printf("Scratchpad\n");
-          break;
-        case CL_GLOBAL:
-          printf("Global\n");
-          break;
-        default:
-          printf("Error: Unkown local memory type!\n");
-          return false;
-          break;
+      cheetah_print("  Local memory type:\t\t\t\t %s",
+                    lmtype == CL_LOCAL ? "Scratchpad" :
+                    lmtype == CL_GLOBAL ? "Global" : "");
+      if (lmtype != CL_LOCAL && lmtype != CL_GLOBAL) {
+        cheetah_print_error("ERROR: Unkown local memory type!");
+        return false;
       }
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_LOCAL_MEM_SIZE, sizeof(cl_ulong), &ulonginfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_LOCAL_MEM_SIZE).\n");
-      printf("  Local memory size:\t\t\t\t %li\n", ulonginfo);
+      cheetah_print("  Local memory size:\t\t\t\t %li", ulonginfo);
 
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_PROFILING_TIMER_RESOLUTION, sizeof(size_t), &sizeinfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_PROFILING_TIMER_RESOLUTION).\n");
-      printf("  Profiling timer resolution:\t\t\t %zi\n", sizeinfo);
+      cheetah_print("  Profiling timer resolution:\t\t\t %zi", sizeinfo);
 
 
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_ENDIAN_LITTLE, sizeof(cl_bool), &boolinfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_ENDIAN_LITTLE).\n");
-      printf("  Device endianess:\t\t\t\t %s\n", boolinfo ? "Little" : "Big");
+      cheetah_print("  Device endianess:\t\t\t\t %s", boolinfo ? "Little" : "Big");
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_AVAILABLE, sizeof(cl_bool), &boolinfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_AVAILABLE).\n");
-      printf("  Available:\t\t\t\t\t %s\n", boolinfo ? "Yes" : "No");
+      cheetah_print("  Available:\t\t\t\t\t %s", boolinfo ? "Yes" : "No");
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_COMPILER_AVAILABLE, sizeof(cl_bool), &boolinfo, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_COMPILER_AVAILABLE).\n");
-      printf("  Compiler available:\t\t\t\t %s\n", boolinfo ? "Yes" : "No");
+      cheetah_print("  Compiler available:\t\t\t\t %s", boolinfo ? "Yes" : "No");
 
       cl_device_exec_capabilities excapa;
       status = clGetDeviceInfo(devices[j], CL_DEVICE_EXECUTION_CAPABILITIES, sizeof(cl_device_exec_capabilities), &excapa, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_EXECUTION_CAPABILITIES).\n");
-      printf("  Execution capabilities:\t\t\t\t \n");
-      printf("    Execute OpenCL kernels:\t\t\t %s\n", excapa & CL_EXEC_KERNEL ? "Yes" : "No");
-      printf("    Execute native function:\t\t\t %s\n", excapa & CL_EXEC_NATIVE_KERNEL ? "Yes" : "No");
+      cheetah_print("  Execution capabilities:\t\t\t\t ");
+      cheetah_print("    Execute OpenCL kernels:\t\t\t %s", excapa & CL_EXEC_KERNEL ? "Yes" : "No");
+      cheetah_print("    Execute native function:\t\t\t %s", excapa & CL_EXEC_NATIVE_KERNEL ? "Yes" : "No");
 
       cl_command_queue_properties cmdqprops;
       status = clGetDeviceInfo(devices[j], CL_DEVICE_QUEUE_PROPERTIES, sizeof(cl_command_queue_properties), &cmdqprops, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_QUEUE_PROPERTIES).\n");
 
-      printf("  Queue properties:\t\t\t\t \n");
-      printf("    Out-of-Order:\t\t\t\t %s\n", cmdqprops & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE ? "Yes" : "No");
-      printf("    Profiling :\t\t\t\t\t %s\n", cmdqprops & CL_QUEUE_PROFILING_ENABLE ? "Yes" : "No");
+      cheetah_print("  Queue properties:\t\t\t\t ");
+      cheetah_print("    Out-of-Order:\t\t\t\t %s", cmdqprops & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE ? "Yes" : "No");
+      cheetah_print("    Profiling :\t\t\t\t\t %s", cmdqprops & CL_QUEUE_PROFILING_ENABLE ? "Yes" : "No");
 
       cl_platform_id platid;
       status = clGetDeviceInfo(devices[j], CL_DEVICE_PLATFORM, sizeof(cl_platform_id), &platid, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_PLATFORM).\n");
-      printf("  Platform ID:\t\t\t\t\t %p\n", platid);
+      cheetah_print("  Platform ID:\t\t\t\t\t %p", platid);
 
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_NAME, BUFBYTES, charbuf, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_NAME).\n");
-      printf("  Name:\t\t\t\t\t\t %s\n", charbuf);
+      cheetah_print("  Name:\t\t\t\t\t\t %s", charbuf);
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_VENDOR, BUFBYTES, charbuf, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_VENDOR).\n");
-      printf("  Vendor:\t\t\t\t\t %s\n", charbuf);
+      cheetah_print("  Vendor:\t\t\t\t\t %s", charbuf);
 
       status = clGetDeviceInfo(devices[j], CL_DRIVER_VERSION, BUFBYTES, charbuf, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DRIVER_VERSION).\n");
-      printf("  Driver version:\t\t\t\t %s\n", charbuf);
+      cheetah_print("  Driver version:\t\t\t\t %s", charbuf);
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_PROFILE, BUFBYTES, charbuf, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_PROFILE).\n");
-      printf("  Profile:\t\t\t\t\t %s\n", charbuf);
+      cheetah_print("  Profile:\t\t\t\t\t %s", charbuf);
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_VERSION, BUFBYTES, charbuf, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_VERSION).\n");
-      printf("  Version:\t\t\t\t\t %s\n", charbuf);
+      cheetah_print("  Version:\t\t\t\t\t %s", charbuf);
 
       status = clGetDeviceInfo(devices[j], CL_DEVICE_EXTENSIONS, BUFBYTES, charbuf, NULL);
       if (status != CL_SUCCESS)
         return checkErr(status, "clGetDeviceInfo failed (CL_DEVICE_EXTENSIONS).\n");
-      printf("  Extensions:\t\t\t\t\t %s\n", charbuf);
+      cheetah_print("  Extensions:\t\t\t\t\t %s", charbuf);
 
     }
 
-    printf("\n\n");
+    cheetah_print("\n");
   }
 
 
@@ -611,7 +597,7 @@ bool runPUTests () {
   for (int PUID = 0; PUID < PUInfoStruct.nPUs; PUID++) { //each PU
 
     for (int jobID = 0; jobID < 3; jobID++) { //three jobs
-fprintf(stderr,"PUM (%i): Running test job %i.\n",myid, jobID);
+      cheetah_info_print("Running test job %i.", jobID);
       job = malloc(sizeof(JobToPUM));
       job->runOn = PUID;
       job->jobID = jobID;
@@ -630,7 +616,7 @@ fprintf(stderr,"PUM (%i): Running test job %i.\n",myid, jobID);
             return false;
           break;
         default:
-          fprintf(stderr,"PROGRAMMING ERROR: trying to create too many test jobs.\n");
+          cheetah_print_error("PROGRAMMING ERROR: trying to create too many test jobs.");
           return false;
         break;
       }
@@ -689,7 +675,7 @@ fprintf(stderr,"PUM (%i): Running test job %i.\n",myid, jobID);
 
       cleanup(job);
 
-fprintf(stderr,"PUM (%i): Test job %i DONE.\n",myid, jobID);
+    cheetah_info_print("Test job %i DONE.", jobID);
 
     }
 

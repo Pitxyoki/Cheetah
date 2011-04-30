@@ -4,31 +4,7 @@
  * Common data to all components of the Cheetah Framework.
  * - includes, constants, variables, data types & function prototypes
  *
- *  First created on: 30 Mar 2010
- *      Author: Luís Miguel Picciochi de Oliveira (Pitxyoki@Gmail.com)
  */
-
-/*
-A FAZER:
-- comentários nos headers de cada ficheiro
-- mudar o nome das libs: libcheetah
-                         libcheetahapi
-- verificar organização dos ficheiros (.c/.h)
-- comentários nos headers de cada ficheiro
-- error checks (perror e afins)
-- Verificar impressões, verificar defines de debug, silent, etc
-- Função para imprimir:
-  "COMPONENTE (ID): MENSAGEM %i %c", inteiro, caracter
-    recebendo:
-    cheetah_debug_print("MENSAGEM %i %c", inteiro, caracter); //impresso se DEBUG=true
-    cheetah_debug_error_print()
-    cheetah_info_print("MENSAGEM %i %c", inteiro, caracter);  //impresso se INFO=true
-    cheetah_info_error_print()
-    cheetah_print("MENSAGEM %i %c", inteiro, caracter);       //impresso sempre
-    cheetah_error_print()
-
- */
-
 
 #ifndef CHEETAH_COMMON_H_
 #define CHEETAH_COMMON_H_
@@ -57,11 +33,11 @@ A FAZER:
    GLOBAL DEFINITIONS
  ---------------------*/
 
-/* Verbose, debug output TODO */
+/* Verbose, debug output TODO: make this configurable when components start */
 #define ALLOW_DEBUG_MESSAGES true
 #define ALLOW_INFO_MESSAGES true
 
-#define SILENT true //SET TO TRUE WHEN RUNNING BENCHMARKS
+#define SILENT true //SET TO TRUE WHEN RUNNING BENCHMARKS TODO: deprecate this
                     //When true, only job allocation decisions by the JS are
                     //printed *while* jobs are being processed.
 
@@ -316,7 +292,7 @@ typedef struct {
    COMMON, AUXILIARY FUNCTIONS
  ------------------------------*/
 
-void initializeComponent (char *name, int argc, char *argv[]);
+void initializeComponent (char *name, char *shortname, int argc, char *argv[]);
 void finalizeComponent   (char *name);
 
 
@@ -338,11 +314,11 @@ void receiveMsg (void *buf, int count, MPI_Datatype datatype, int source, int ta
 
 /* Functions to print messages to the console */
 void cheetah_print            (char *message, ...);
-void cheetah_error_print      (char *message, ...);
+void cheetah_print_error      (char *message, ...);
 void cheetah_info_print       (char *message, ...);
-void cheetah_info_error_print (char *message, ...);
+void cheetah_info_print_error (char *message, ...);
 void cheetah_debug_print      (char *message, ...);
-void cheetah_debug_error_print(char *message, ...);
+void cheetah_debug_print_error(char *message, ...);
 
 
 /* Functions to print Job contents. */

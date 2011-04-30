@@ -35,7 +35,7 @@ int initSched() {
 
 
 //TODO: better organize this file
-
+//TODO: check the sched_workload_rr.c to get an improved version of this function
 void printSchedPUMs () {
   struct PUMs *iter = CPUsHead;
   fprintf(stderr,"CPUs:\n");
@@ -125,7 +125,7 @@ void addReservedPU(cl_device_type devType, PUProperties *PU) {
 
 
 void setupPUMsStruct(PUMStruct *receivedStruct, double latencyResult, double throughputResult) {
-fprintf(stderr, "setting up latency %lf, throughput %lf\n", latencyResult, throughputResult);
+//fprintf(stderr, "setting up latency %lf, throughput %lf\n", latencyResult, throughputResult);
   for (int i = 0; i < receivedStruct->nPUs; i++) {
 
     //store each PU by its processing throughput -> lower times for throughput go first
@@ -137,8 +137,8 @@ fprintf(stderr, "setting up latency %lf, throughput %lf\n", latencyResult, throu
     newPUM->connThroughput = throughputResult;
     newPUM->thisPUM = receivedStruct;
 
-    fprintf(stderr,">>>>>>>>>>>< receivedStruct (%i) type for id (%i) : %lu (isit CPU? %i)\n", receivedStruct->id, i, receivedStruct->availablePUs[i].device_type, CL_DEVICE_TYPE_CPU );
-    fprintf(stderr,">>>>>>>>>>>< receivedStruct (%i) nPUs: %i\n", receivedStruct->id, receivedStruct->nPUs);
+//    fprintf(stderr,">>>>>>>>>>>< receivedStruct (%i) type for id (%i) : %lu (isit CPU? %i)\n", receivedStruct->id, i, receivedStruct->availablePUs[i].device_type, CL_DEVICE_TYPE_CPU );
+//    fprintf(stderr,">>>>>>>>>>>< receivedStruct (%i) nPUs: %i\n", receivedStruct->id, receivedStruct->nPUs);
     if (receivedStruct->availablePUs[i].device_type == CL_DEVICE_TYPE_CPU) {
       if (CPUsHead == NULL) {
         CPUsHead = newPUM;
@@ -198,7 +198,7 @@ fprintf(stderr, "setting up latency %lf, throughput %lf\n", latencyResult, throu
       }
     }
     else
-      fprintf(stderr,"JS (%i): received a PU with an unsupported device type (%li)", myid, receivedStruct->availablePUs[i].device_type);
+      cheetah_print_error("Received a PU with an unsupported device type (%li)", receivedStruct->availablePUs[i].device_type);
   }
 
 

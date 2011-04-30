@@ -88,7 +88,7 @@ void setupPUMsStruct(PUMStruct *receivedStruct, double latencyResult, double thr
 
     while (fscanf(f,"%i %i %f\n",&testPU, &testPUM, &nil) != EOF) {
       if (testPU == i && testPUM == receivedStruct->id) {
-	fprintf(stderr,"JS  (%i): PU %i, PUM %i marked as useless. Ignoring PU.\n",myid, testPU, testPUM);
+	cheetah_info_print_error("PU %i @ PU-M %i marked as useless. Ignoring this PU.", testPU, testPUM);
 	useless = true;
 	break;
       }
@@ -120,9 +120,7 @@ void setupPUMsStruct(PUMStruct *receivedStruct, double latencyResult, double thr
     newPU->currentQueue = NULL;
     newPU->startedAtInstant = 0.0;
     if (pthread_mutex_init(&(newPU->accessMutex), NULL) != 0)
-      fprintf(stderr, "JS  (%i): ERROR INITIALIZING ACCESS MUTEX for PU %i of PUM %i\n", myid, i,receivedStruct->id);
-//    if(pthread_cond_init(&(newPU->accessCondition), NULL) != 0)
-//      fprintf(stderr, "PUM(%i) ERROR INITIALIZING COND for PU %i of PUM %i\n", myid, i, receivedStruct->id);
+      cheetah_print_error("ERROR INITIALIZING ACCESS MUTEX for PU %i @ PU-M %i", i, receivedStruct->id);
 
     if (PUsHead == NULL)
       PUsHead = newPU;
@@ -152,15 +150,13 @@ bool acceptablePUForJob (PUProperties *PUProps, JobToPUM *jtp) {
 
     //1. Total arguments size
     if (totalArgSize > PUProps->global_mem_size) {
-      if (!SILENT)
-      fprintf(stderr,"JS  (%i):  PU unnacceptable because global_mem_size (%lu) < totalArgSize (%lu).\n",myid,PUProps->global_mem_size, totalArgSize);
+      cheetah_info_print_error("PU unnacceptable because global_mem_size (%lu) < totalArgSize (%lu).", PUProps->global_mem_size, totalArgSize);
       return false;
     }
 
     //2. Size of each argument
     if (jtp->argSizes[i] > PUProps->max_memory_alloc) {
-      if (!SILENT)
-      fprintf(stderr,"JS  (%i):  PU unnacceptable because max_memory_alloc < jtp->argSizes[%i] (%i)\n",myid, i, jtp->argSizes[i]);
+      cheetah_info_print_error("PU unnacceptable because max_memory_alloc < jtp->argSizes[%i] (%i)", i, jtp->argSizes[i]);
       return false;
     }
 
@@ -169,8 +165,7 @@ bool acceptablePUForJob (PUProperties *PUProps, JobToPUM *jtp) {
   //3. NDRange dimensions
   // 3.1 number of dimensions
   if (jtp->nDimensions > PUProps->max_work_item_dimensions) {
-    if (!SILENT)
-    fprintf(stderr,"JS  (%i):  PU unnacceptable because nDimensions (%i) > PUProps->max_work_item_dimensions (%i)\n",myid, jtp->nDimensions, PUProps->max_work_item_dimensions);
+    cheetah_info_print_error("PU unnacceptable because nDimensions (%i) > PUProps->max_work_item_dimensions (%i)", jtp->nDimensions, PUProps->max_work_item_dimensions);
     return false;
   }
 
@@ -178,8 +173,7 @@ bool acceptablePUForJob (PUProperties *PUProps, JobToPUM *jtp) {
   for (int i = 0; i < jtp->nDimensions; i++) {
     // 3.2 number of items per dimension
     if (jtp->nItems[i] > PUProps->max_work_item_sizes[i]) {
-      if (!SILENT)
-      fprintf(stderr,"JS  (%i):  PU unnacceptable because max_work_item_sizes[i] < jtp->nItems[%i] (%i)\n",myid, i, jtp->nItems[i]);
+      cheetah_info_print_error("PU unnacceptable because max_work_item_sizes[i] < jtp->nItems[%i] (%i)", i, jtp->nItems[i]);
       return false;
     }
 
@@ -188,8 +182,7 @@ bool acceptablePUForJob (PUProperties *PUProps, JobToPUM *jtp) {
 
   // 3.3 number of total items per group
   if (totalWorkGroupSize > PUProps->max_work_group_size) {
-    if (!SILENT)
-    fprintf(stderr,"JS  (%i):  PU unnacceptable because totalWorkGroupSize (%i)> PUProps->max_work_group_size\n",myid, totalWorkGroupSize);
+    cheetah_info_print_error("PU unnacceptable because totalWorkGroupSize (%i)> PUProps->max_work_group_size", totalWorkGroupSize);
     return false;
   }
 
@@ -204,9 +197,9 @@ double categoryDurationEstimate (struct PUList *PU, int category) {
   }
 
   //if we are here, it means that this PU never saw this category.
-  fprintf(stderr, "JS  (%i): BUG<<<<<<<<<<<<<<<<<<<<\n", myid);
-  fprintf(stderr, "JS  (%i): BUG<<<<<<<<<<<<<<<<<<<<: We should not have reached this. Trying to estimate time for a never-before seen category?\n", myid);
-  fprintf(stderr, "JS  (%i): BUG<<<<<<<<<<<<<<<<<<<<\n", myid);
+  cheetah_print_error("BUG<<<<<<<<<<<<<<<<<<<<");
+  cheetah_print_error("BUG<<<<<<<<<<<<<<<<<<<<: We should not have reached this. Trying to estimate time for a never-before seen category!?");
+  cheetah_print_error("BUG<<<<<<<<<<<<<<<<<<<<");
   return PU->thisPUProps->throughput; //TODO: replace with (Num of FLOPs)/(FLOP/sec)
 }
 
@@ -219,14 +212,12 @@ double predictIdleTime (struct PUList *PU, JobToPUM *jtp) {
     availableTime = timeNow;
   else
     availableTime = PU->startedAtInstant;
-  if (!SILENT)
-  fprintf(stderr,"JS  (%i):    idle time prediction: started first job on queue at %f.\n",myid, PU->startedAtInstant);
+  cheetah_debug_print("    idle time prediction: started first job on queue at %f.", PU->startedAtInstant);
   if (PU->nJobsAtQueue == 0) {
-    if (!SILENT)
-    fprintf(stderr,"JS  (%i):    idle time prediction: ...BUT! nJobsAtQueue==0, so the starting time will be _now_ (%f).\n",myid, availableTime);
+    cheetah_debug_print("    idle time prediction: ...BUT! nJobsAtQueue==0, so the starting time will be _now_ (%f).", availableTime);
   }
 
-  if (FIXED)
+  if (FIXED) //TODO TODO TODO UGLY, UGLY, UGLY
     for (int i = 0; i<PU->nJobsAtQueue; i++) {
       availableTime+=PU->thisPUProps->throughput;
     }
@@ -236,8 +227,8 @@ double predictIdleTime (struct PUList *PU, JobToPUM *jtp) {
     for (int i = 0; i<PU->nJobsAtQueue; i++)
       availableTime += categoryDurationEstimate(PU, PU->currentQueue[i]);
   pthread_mutex_unlock(&(PU->accessMutex));
-  if (!SILENT)
-  fprintf(stderr,"JS  (%i):    idle time prediction: after each category is done, will be available at: %f\n",myid, availableTime);
+
+  cheetah_debug_print("    idle time prediction: after each category is done, will be available at: %f", availableTime);
 
 
 
@@ -273,21 +264,20 @@ double predictIdleTime (struct PUList *PU, JobToPUM *jtp) {
   availableTime += categEst;//categoryDurationEstimate(PU, jtp->category);
 
 
-  if (!SILENT)
-  fprintf(stderr,"JS  (%i):    idle time prediction: Latency of PU connect. : %f\n"
-                 "                                   Throughput of PU conn. : %f\n"
-                 "                                   Transfer time for job  : %f (size = %i / thgput)\n"
-                 "                                   Latency of this PU     : %f\n"
-                 "                                   Process. hides transfer? %s\n"
-                 "                                   Category estimated time: %f\n"
-                 "                                   Predicted Availability : %f\n",myid,
-                                                     PU->connLatency,
-                                                     PU->connThroughput,
-                                                     totalTransferSize / PU->connThroughput, totalTransferSize,
-                                                     PU->thisPUProps->latency,
-                                                     hideTransf == true ? "true" : "false",
-                                                     categEst,
-                                                     availableTime);
+  cheetah_info_print("\tidle time prediction:\tLatency of PU connect. : %f\n"
+                          "\t\t\t\t\t\t\t\t\t\tThroughput of PU conn. : %f\n"
+                          "\t\t\t\t\t\t\t\t\t\tTransfer time for job  : %f (size = %i / thgput)\n"
+                          "\t\t\t\t\t\t\t\t\t\tLatency of this PU     : %f\n"
+                          "\t\t\t\t\t\t\t\t\t\tProcessing hides transfer? %s\n"
+                          "\t\t\t\t\t\t\t\t\t\tCategory estimated time: %f\n"
+                          "\t\t\t\t\t\t\t\t\t\tPredicted Availability : %f\n",myid,
+                           PU->connLatency,
+                           PU->connThroughput,
+                           totalTransferSize / PU->connThroughput, totalTransferSize,
+                           PU->thisPUProps->latency,
+                           hideTransf == true ? "true" : "false",
+                           categEst,
+                           availableTime);
 
 
 
@@ -334,10 +324,9 @@ double scorePU (struct PUList *PU, JobToPUM *jtp) {
 //if nPossible = 0, will pick any available PUM and any PU
 
 PUMStruct *pickPUWith(int nPossible, cl_device_type *possibleList, JobToPUM *jtp) {
-  if (!SILENT){
-  fprintf(stderr,"JS  (%i): Going to pick PU for jtp number %i \n", myid, jtp->jobID);
-  fprintf(stderr,"JS  (%i): nPossible: %i\n", myid, nPossible);
-  }
+
+  cheetah_info_print("Going to pick PU for jtp number %i (nPossible PUs: %i.", myid, jtp->jobID, nPossible);
+
 
   int i = 0;
   int totalPossible = 0;
@@ -350,8 +339,7 @@ PUMStruct *pickPUWith(int nPossible, cl_device_type *possibleList, JobToPUM *jtp
   PUMStruct *result = malloc(sizeof (PUMStruct));
   struct PUList *resultPU = NULL;
 
-  if (!SILENT)
-  fprintf(stderr,"JS  (%i): 1. Going to build the list of possible PUs\n", myid);
+  cheetah_debug_print("1. Going to build the list of possible PUs.");
   //1. Build the list of PUs to which this job may be submitted to
   // -> filtering those that can't run the job due to certain limitations
   for (i = 0; i < nPossible ; i++) {
@@ -359,30 +347,26 @@ PUMStruct *pickPUWith(int nPossible, cl_device_type *possibleList, JobToPUM *jtp
 
     while (allPUsIter != NULL) { //assuming the PU list doesn't change while we iterate it
       if (allPUsIter->thisPUProps->device_type == possibleList[i]) {
-        if (!SILENT)
-        fprintf(stderr,"JS  (%i):  Found a PU with the same device type (PU %i, PUM %i). Filtering it...\n", myid, allPUsIter->PUid, allPUsIter->PUMid);
+        cheetah_debug_print(" Found a PU with the same device type (PU %i, PUM %i). Filtering it...", allPUsIter->PUid, allPUsIter->PUMid);
         if (acceptablePUForJob(allPUsIter->thisPUProps, jtp)) { //filtering...
-          if (!SILENT)
-          fprintf(stderr,"JS  (%i):  Accepted!\n", myid);
+          cheetah_debug_print(" Accepted!");
           totalPossible++;
           possiblePUs = realloc(possiblePUs, sizeof(struct PUList *)*totalPossible);
           possiblePUs[totalPossible-1] = allPUsIter;
         }
         else
-          if (!SILENT)
-          fprintf(stderr,"JS  (%i): PU REJECTED!\n", myid);
+          cheetah_debug_print(" PU REJECTED!");
       }
       allPUsIter = allPUsIter->next;
     } // endwhile
 
   } // endfor
-  if (!SILENT){
-  fprintf(stderr,"JS  (%i): Finished building the list of possible PUs.\n", myid);
+  cheetah_debug_print(" Finished building the list of possible PUs.");
   ////////////End of 1.
 
-  fprintf(stderr,"JS  (%i): 2. Going to determine the finishing times for the computation on each of them (will leave here on first job of each category for each PU)\n", myid);
-  fprintf(stderr,"JS  (%i): This job's category: %i\n", myid, jtp->category);
-  }
+  cheetah_debug_print("2. Going to determine the finishing times for the computation on each of them (will leave here on first job of each category for each PU).");
+  cheetah_debug_print("This job's category: %i.", jtp->category);
+
   //2. Determining the finishing times for the computations on each of them
   // -> and choosing the best one
   double bestScore = DBL_MAX;//FLT_MAX;
@@ -390,46 +374,40 @@ PUMStruct *pickPUWith(int nPossible, cl_device_type *possibleList, JobToPUM *jtp
 
   for (i = 0 ; i < totalPossible; i++) {
     //2.1 get PU's score
-    if (!SILENT)
-    fprintf(stderr,"JS  (%i):   Going to get score for PU %i (PU %i of PUM %i)\n", myid, i, possiblePUs[i]->PUid, possiblePUs[i]->PUMid);
+    cheetah_debug_print("  Going to get score for PU %i (PU %i of PUM %i).", i, possiblePUs[i]->PUid, possiblePUs[i]->PUMid);
     currScore = scorePU(possiblePUs[i], jtp);
 
-    if (!SILENT)
-    fprintf(stderr,"JS  (%i):   Got score: %f (best was %f)\n", myid, currScore, (bestScore == DBL_MAX) ? -999 : bestScore);
+    cheetah_debug_print("  Got score: %f (best was %f).", currScore, (bestScore == DBL_MAX) ? -999 : bestScore);
 
     assert(currScore >= 0.0);
-    if (!SILENT)
-    fprintf(stderr,"JS  (%i):   Asserted successfully.\n", myid);
+    
+    cheetah_debug_print_error("  Asserted successfully.");
     //2.2 if this score is lower than the recorded low, keep this one
     if (currScore == 0.0) {
-      if (!SILENT)
-      fprintf(stderr,"JS  (%i):   score is 0 for PU %i, PUM: %i!!!\n", myid, possiblePUs[i]->PUid, possiblePUs[i]->PUMid);
+      cheetah_debug_print("  score is 0 for PU %i, PUM: %i!!!", possiblePUs[i]->PUid, possiblePUs[i]->PUMid);
       resultPU = possiblePUs[i];
       break;
     }
     else if (currScore < bestScore) {
-      if (!SILENT)
-      fprintf(stderr,"JS  (%i):   score is > 0 for PU %i, PUM %i\n", myid, possiblePUs[i]->PUid, possiblePUs[i]->PUMid);
+      cheetah_debug_print("  score is > 0 for PU %i, PUM %i.", possiblePUs[i]->PUid, possiblePUs[i]->PUMid);
       bestScore = currScore;
       resultPU = possiblePUs[i];
     }
-    if (!SILENT)
-    fprintf(stderr,"JS  (%i):   re-cycling....?\n", myid);
+    cheetah_debug_print("  re-cycling....?");
   }
 
   free(possiblePUs);
 
   if (resultPU == NULL) {//it might happen that no PU is adequate (none has enough resources for this job)
-    fprintf(stderr,"JS  (%i): No PU is adequate! :(\n", myid);
+    cheetah_info_print_error("No PU is adequate for the current job! :(");
     return NULL;
   }
 
-  if (!SILENT)
-  fprintf(stderr,"JS  (%i): Ok, got a PU.\n", myid);
+  cheetah_debug_print("Ok, got a PU.");
   jtp->runOn = resultPU->PUid;
   result->id = resultPU->PUMid;
 
-  fprintf(stderr,"JS  (%i): Selected PU %i @ PUM %i\n", myid, jtp->runOn, result->id);
+  cheetah_info_print("Selected PU %i @ PU-M %i", jtp->runOn, result->id);
   ///////////End of 2.
 
 
@@ -439,21 +417,17 @@ PUMStruct *pickPUWith(int nPossible, cl_device_type *possibleList, JobToPUM *jtp
   // - jobsAtQueue++
   // - currentQueue = currentQueue{Cat}
   // - if (jobsAtQueue == 1) startedAtInstant = now + latency + jobSize/throughput
-  if (!SILENT)
-  fprintf(stderr,"JS  (%i): 3. Updating category execution tracking.\n", myid);
+  cheetah_debug_print("3. Updating category execution tracking.");
   for (i = 0; i < resultPU->nCategsSeen; i++) {
     if (resultPU->allCategsSeen[i] == jtp->category) {
-      if (!SILENT)
-      fprintf(stderr,"JS  (%i): Current PU had already seen this category. Increasing nTimesUsed.\n", myid);
+      cheetah_debug_print("Current PU had already seen this category. Increasing nTimesUsed.");
       (resultPU->nTimesUsed[i])++;
-      if (!SILENT)
-      fprintf(stderr,"JS  (%i): Successfully increased nTimesUsed. Breaking now.\n", myid);
+      cheetah_debug_print("Successfully increased nTimesUsed. Breaking now.");
       break;
     }
   }
   if (i == resultPU->nCategsSeen) {//then this PU hasn't ran a job of this category yet
-    if (!SILENT)
-    fprintf(stderr,"JS  (%i): this PU hadn't ran a job of this category yet. Creating data containers.\n", myid);
+    cheetah_debug_print("This PU hadn't ran a job of this category yet. Creating data containers.");
 
     if (pthread_mutex_lock(&(resultPU->accessMutex)))
       perror("pthread_mutex_lock");
@@ -466,35 +440,30 @@ PUMStruct *pickPUWith(int nPossible, cl_device_type *possibleList, JobToPUM *jtp
     resultPU->alreadyMeasured =      realloc(resultPU->alreadyMeasured,      sizeof(bool)*(resultPU->nCategsSeen));
     if (pthread_mutex_unlock(&(resultPU->accessMutex)))
       perror( "pthread_mutex_unlock");
-    if (!SILENT)
-    fprintf(stderr,"JS  (%i): created ok.\n", myid);
+    cheetah_debug_print("Created ok.");
 
     //we don't need a lock here because this is the last item that has been created, which will never correspond to something being edited
     resultPU->allCategsSeen[i] = jtp->category;
     resultPU->nTimesUsed[i] = 1;
     resultPU->categAverageDuration[i] = resultPU->thisPUProps->throughput;//TODO: replace with FLOPS
     resultPU->alreadyMeasured[i] = false;
-    if (!SILENT)
-    fprintf(stderr,"JS  (%i): assigned ok\n", myid);
+    cheetah_debug_print("Assigned ok.");
   }
   ////////////End of 3.
 
   if (pthread_mutex_lock(&(resultPU->accessMutex)))
     perror("pthread_mutex_lock");
-  if (!SILENT)
-  fprintf(stderr,"JS  (%i): 4. Updating job queue monitor for this PU...\n", myid);
+  
+  cheetah_debug_print("4. Updating job queue monitor for this PU...");
   (resultPU->nJobsAtQueue)++;
   resultPU->currentQueue = realloc(resultPU->currentQueue, sizeof(int)*(resultPU->nJobsAtQueue));
-  if (!SILENT)
-  fprintf(stderr,"JS  (%i):  Resized ok\n", myid);
+  cheetah_debug_print(" Resized ok.");
 
   resultPU->currentQueue[(resultPU->nJobsAtQueue)-1] = jtp->category;
-  if (!SILENT)
-  fprintf(stderr,"JS  (%i):  Assigned category to last job ok\n", myid);
+  cheetah_debug_print(" Assigned category to last job ok.");
 
   if ((resultPU->nJobsAtQueue) == 1) { //there are no more jobs on this PU's queue -> we can predict when the next (this) job will start running
-    if (!SILENT)
-    fprintf(stderr,"JS  (%i): There are no more jobs running on this PU. Setting predicted start time\n", myid);
+    cheetah_debug_print("There are no more jobs running on this PU. Setting predicted start time.");
     int totalTransferSize = 0;
     for (i = 0; i < jtp->nTotalArgs; i++) {
       if ((jtp->argTypes[i] == INPUT)||
@@ -503,15 +472,12 @@ PUMStruct *pickPUWith(int nPossible, cl_device_type *possibleList, JobToPUM *jtp
     }
     resultPU->startedAtInstant = time(NULL) + (resultPU->connLatency) + (totalTransferSize/(resultPU->connThroughput));
 
-    if (!SILENT){
-    fprintf(stderr,"JS  (%i):  Calculations: connLat: %f, transfSize: %i, throughput: %f\n", myid, resultPU->connLatency, totalTransferSize, resultPU->connThroughput);
-    fprintf(stderr,"JS  (%i):  Results: div: %f, sum: %f\n", myid, (totalTransferSize/(resultPU->connThroughput)), resultPU->connLatency + (totalTransferSize/(resultPU->connThroughput)));
-    fprintf(stderr,"JS  (%i):  Will start at instant: %f (curr time is %li)\n", myid, resultPU->startedAtInstant, time(NULL));
-    }
+    cheetah_debug_print(" Calculations: connLat: %f, transfSize: %i, throughput: %f.", resultPU->connLatency, totalTransferSize, resultPU->connThroughput);
+    cheetah_debug_print(" Results: div: %f, sum: %f.", (totalTransferSize/(resultPU->connThroughput)), resultPU->connLatency + (totalTransferSize/(resultPU->connThroughput)));
+    cheetah_debug_print(" Will start at instant: %f (curr time is %li).", resultPU->startedAtInstant, time(NULL));
   }
   else
-    if (!SILENT)
-    fprintf(stderr,"JS  (%i): There are more jobs on this PU's queue (the running one must have started at %f (curr time is %li).\n", myid, resultPU->startedAtInstant, time(NULL));
+    cheetah_debug_print("There are more jobs on this PU's queue (the running one must have started at %f (curr time is %li).", resultPU->startedAtInstant, time(NULL));
 
   if (pthread_mutex_unlock(&(resultPU->accessMutex)))
     perror("pthread_mutex_unlock");
@@ -556,7 +522,7 @@ void treatFinishNotification (finishedJobNotification *fjn, int fromPUM) {
 
 
       pthread_mutex_lock(&(allPUsIter->accessMutex));
-      printf("RECEIVED AN EXECUTION TIME from PU %i, PUM %i: %fs (overheads: %fs)\n", fjn->ranAtPU, fromPUM, fjn->executionTime, fjn->overheads);
+      cheetah_debug_print("RECEIVED AN EXECUTION TIME from PU %i, PUM %i: %fs (overheads: %fs).", fjn->ranAtPU, fromPUM, fjn->executionTime, fjn->overheads);
 /*      if ((fjn->executionTime > 5000) && (fjn->executionTime != DBL_MAX)) {
 	FILE *f = fopen("uselessPUMs.txt","a");
 	if (f == NULL) {
@@ -597,7 +563,7 @@ void treatFinishNotification (finishedJobNotification *fjn, int fromPUM) {
   }
 
   if (allPUsIter == NULL) {
-    fprintf(stderr, "JS  (%i): PROGRAMMING ERROR saving finish notification. did not find the PU corresponding to this finished job!\n", myid);
+    cheetah_print_error("PROGRAMMING ERROR saving finish notification. did not find the PU corresponding to this finished job!");
     exit(EXIT_FAILURE);
   }
 

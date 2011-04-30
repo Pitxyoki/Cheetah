@@ -1,5 +1,5 @@
 /*
- * DistribCLUtils.c
+ * cheetah-api.c
  *
  *  Created on: 12 May 2010
  *      Author: luis
@@ -43,6 +43,7 @@ void *notificationWaiter ();
 void initDistribCL(int argc, char *argv[]) {
   int namelen;
   char processorname[MPI_MAX_PROCESSOR_NAME];
+  componentName = "JM";
 
   int prov;
   MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &prov);
@@ -184,7 +185,7 @@ void setDimensions (Job *job, int nDim, int *nItemsPerDim, int *nItemsPerGroup) 
 void loadSourceFile (Job *job, char *taskSourceFile) {
   job->taskSource = fileToString(taskSourceFile);
   if (job->taskSource == NULL) {
-    fprintf(stderr,"FILE NOT FOUND! Please verify kernel file path: %s.\n", taskSourceFile);
+    cheetah_print_error("FILE NOT FOUND! Please verify kernel file path: %s.", taskSourceFile);
     exit (EXIT_FAILURE);
   }
   job->taskSourceSize = strlen(job->taskSource)+1;
@@ -421,39 +422,20 @@ JobResults *getResults (Job *job) {
   //TODO: Check if this makes any difference
   sendMsg(NULL, 0, MPI_BYTE, status.MPI_SOURCE, COMM_TAG_RESULTGET, MPI_STATUS_IGNORE);
 
-  if (debug_JM)
-    fprintf(stderr,"JM  (%i): Result received!\n", myid);
   MPI_Unpack(receivedData, dataSize, &pos,        &(JR->probID),                   1, MPI_INT, MPI_COMM_WORLD);
-
-  if (debug_JM)
-    fprintf(stderr,"JM  (%i): here1, %i\n", myid, JR->probID);
   MPI_Unpack(receivedData, dataSize, &pos,         &(JR->jobID),                   1, MPI_INT, MPI_COMM_WORLD);
-
-  if (debug_JM)
-    fprintf(stderr,"JM  (%i): here2, %i\n", myid, JR->jobID);
   MPI_Unpack(receivedData, dataSize, &pos, &(JR->nTotalResults),                   1, MPI_INT, MPI_COMM_WORLD);
 
-  if (debug_JM)
-    fprintf(stderr,"JM  (%i): here3\n", myid);
   JR->resultSizes = calloc(JR->nTotalResults, sizeof(int));
   MPI_Unpack(receivedData, dataSize, &pos,      JR->resultSizes,  JR->nTotalResults, MPI_INT, MPI_COMM_WORLD);
 
-  if (debug_JM)
-    fprintf(stderr,"JM  (%i): here4, %i\n", myid, JR->nTotalResults);
   JR->results = calloc(JR->nTotalResults, sizeof(void *));
   for (cl_uint i = 0; i < JR->nTotalResults; i++ ) {
-    if (debug_JM)
-      fprintf(stderr, "JM  (%i): unpacking res %i, size %i\n", myid, i, JR->resultSizes[i]);
     JR->results[i] = malloc(JR->resultSizes[i]);
     MPI_Unpack(receivedData, dataSize, &pos,     JR->results[i], JR->resultSizes[i], MPI_BYTE, MPI_COMM_WORLD);
   }
 
-  if (debug_JM)
-    fprintf(stderr,"JM  (%i): here5\n", myid);
   MPI_Unpack(receivedData, dataSize, &pos,   &(JR->returnStatus),                  1, MPI_INT,  MPI_COMM_WORLD);
-
-  if (debug_JM)
-    fprintf(stderr,"JM  (%i): here6 (%i)\n", myid, JR->returnStatus);
 
   free(receivedData);
 
@@ -480,7 +462,7 @@ void quitDistribCL () {
   for (int i = 1; i < size; i++)
     sendMsg(NULL, 0, MPI_BYTE, i, COMM_TAG_SHUTDOWN, MPI_STATUS_IGNORE);
 
-  fprintf(stderr,"Goodbye.\n");
+  cheetah_print_error("Goodbye.");
   MPI_Finalize();
 
 }

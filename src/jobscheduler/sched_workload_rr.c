@@ -63,6 +63,45 @@ void printSchedPUMs () {
 }
 
 
+//TODO: Test this function & replace the previous one with it
+void printSchedPUMsTOTEST () {
+  struct PUMs *iter = CPUsHead;
+  char *string_to_print = calloc(12, sizeof(char)); //"CPUs:\n" + "GPUs:\n"
+  string_to_print = "CPUs:\n"
+  //fprintf(stderr,"CPUs:\n");
+  
+  
+
+  while (iter != NULL) {
+    string_to_print = realloc(string_to_print, sizeof(string_to_print) + 12 + (54 * (iter->thisPUM->nPUs)))
+    
+    sprintf(string_to_print,"  PUM %i: \n", iter->thisPUM->id);
+    for (int l = 0; l < iter->thisPUM->nPUs; l++) {
+      if (iter->thisPUM->availablePUs[l].device_type == CL_DEVICE_TYPE_CPU)
+        sprintf(string_to_print,"    %i: latency: %f, throughput: %f\n", l, iter->thisPUM->availablePUs[l].latency, iter->thisPUM->availablePUs[l].throughput);
+    }
+    iter = iter->next;
+  }
+
+
+  iter = GPUsHead;
+  sprintf(string_to_print,"GPUs:\n");
+  while (iter != NULL) {
+    string_to_print = realloc(string_to_print, sizeof(string_to_print) + 12 + (54 * (iter->thisPUM->nPUs)))
+
+    sprintf(string_to_print,"  PUM %i: \n", iter->thisPUM->id);
+    for (int l = 0; l < iter->thisPUM->nPUs; l++) {
+      if (iter->thisPUM->availablePUs[l].device_type == CL_DEVICE_TYPE_GPU)
+        sprintf(string_to_print,"    %i: latency: %f, throughput: %f\n", l, iter->thisPUM->availablePUs[l].latency, iter->thisPUM->availablePUs[l].throughput);
+    }
+  iter = iter->next;
+  }
+  cheetah_print(string_to_print);
+}
+
+
+
+
 
 /*
  * Reserved PUs' functions
@@ -160,7 +199,7 @@ void setupPUMsStruct(PUMStruct *receivedStruct, double latencyResult, double thr
       }
     }
     else
-      fprintf(stderr,"JS (%i): received a PU with an unsupported device type (%li)", myid, receivedStruct->availablePUs[i].device_type);
+      cheetah_print_error("Received a PU with an unsupported device type (%li)", receivedStruct->availablePUs[i].device_type);
   }
 
 

@@ -8,7 +8,7 @@ AC_INIT([Cheetah Distributed Computing Framework], [0.1], [p110390@fct.unl.pt], 
 
 #Information on the package
 AC_CONFIG_AUX_DIR([config])
-AC_CONFIG_SRCDIR([src/libcheetah-common/utils.c])
+AC_CONFIG_SRCDIR([src/libcheetah-common/cheetah-common.c])
 AC_CONFIG_HEADERS([config/config.h])
 AC_CONFIG_MACRO_DIR([m4])
 

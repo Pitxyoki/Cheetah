@@ -17,7 +17,7 @@ void parseOpts (int argc, char *argv[]) {
 
 
 int main (int argc, char *argv[]) {
-  initializeComponent("Result Collector", argc, argv);
+  initializeComponent("Result Collector", "RC", argc, argv);
   parseOpts(argc, argv);
 
 

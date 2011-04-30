@@ -1,7 +1,7 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-AM_CPPFLAGS = -DDATADIR='"$(datadir)"' -I$(srcdir)/src/include
+AM_CPPFLAGS = -DDATADIR='"$(pkgdatadir)"' -I$(srcdir)/src/include
 AM_LDFLAGS  = -L$(builddir)/lib
 
 ##_LDADD  - programs
@@ -20,13 +20,13 @@ lib_LTLIBRARIES = lib/libcheetah-common.la lib/libcheetah.la
 
 ## libcheetah-common
 lib_libcheetah_common_la_LDFLAGS = -shared $(AM_LDFLAGS)
-lib_libcheetah_common_la_SOURCES = src/libcheetah-common/utils.c
+lib_libcheetah_common_la_SOURCES = src/libcheetah-common/cheetah-common.c
 
 
 ## libcheetah
 lib_libcheetah_la_LDFLAGS = -shared $(AM_LDFLAGS)
 lib_libcheetah_la_LIBADD  = $(builddir)/lib/libcheetah-common.la
-lib_libcheetah_la_SOURCES = src/libcheetah/DistribCLUtils.c
+lib_libcheetah_la_SOURCES = src/libcheetah/cheetah-api.c
 
 
 ## Installable library headers
