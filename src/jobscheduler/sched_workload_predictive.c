@@ -264,21 +264,13 @@ double predictIdleTime (struct PUList *PU, JobToPUM *jtp) {
   availableTime += categEst;//categoryDurationEstimate(PU, jtp->category);
 
 
-  cheetah_info_print("\tidle time prediction:\tLatency of PU connect. : %f\n"
-                          "\t\t\t\t\t\t\t\t\t\tThroughput of PU conn. : %f\n"
-                          "\t\t\t\t\t\t\t\t\t\tTransfer time for job  : %f (size = %i / thgput)\n"
-                          "\t\t\t\t\t\t\t\t\t\tLatency of this PU     : %f\n"
-                          "\t\t\t\t\t\t\t\t\t\tProcessing hides transfer? %s\n"
-                          "\t\t\t\t\t\t\t\t\t\tCategory estimated time: %f\n"
-                          "\t\t\t\t\t\t\t\t\t\tPredicted Availability : %f\n",myid,
-                           PU->connLatency,
-                           PU->connThroughput,
-                           totalTransferSize / PU->connThroughput, totalTransferSize,
-                           PU->thisPUProps->latency,
-                           hideTransf == true ? "true" : "false",
-                           categEst,
-                           availableTime);
-
+  cheetah_info_print("\tidle time prediction:\tLatency of PU connect. : %f", PU->connLatency);
+  cheetah_info_print("\t\t\t\t\t\t\t\t\t\tThroughput of PU conn. : %f", PU->connThroughput);
+  cheetah_info_print("\t\t\t\t\t\t\t\t\t\tTransfer time for job  : %f (size = %i / thgput)", totalTransferSize / PU->connThroughput, totalTransferSize);
+  cheetah_info_print("\t\t\t\t\t\t\t\t\t\tLatency of this PU     : %f", PU->thisPUProps->latency);
+  cheetah_info_print("\t\t\t\t\t\t\t\t\t\tProcessing hides transfer? %s", hideTransf == true ? "true" : "false");
+  cheetah_info_print("\t\t\t\t\t\t\t\t\t\tCategory estimated time: %f", categEst);
+  cheetah_info_print("\t\t\t\t\t\t\t\t\t\tPredicted Availability : %f", availableTime);
 
 
   return availableTime;

@@ -4,7 +4,7 @@
 
 #Autoconf requirements
 AC_PREREQ([2.67])
-AC_INIT([Cheetah Distributed Computing Framework], [0.1], [p110390@fct.unl.pt], [cheetah], [http://projects.fct.unl.pt/projects/di-cheetah])
+AC_INIT([Cheetah Distributed Computing Framework], [0.2], [p110390@fct.unl.pt], [cheetah], [http://asc.di.fct.unl.pt/cheetah])
 
 #Information on the package
 AC_CONFIG_AUX_DIR([config])
@@ -33,6 +33,10 @@ AC_SEARCH_LIBS([clEnqueueNDRangeKernel], [OpenCL], [],
   [AC_MSG_ERROR([Unable to find an OpenCL implementation library.])]
 )
 
+#m
+AC_SEARCH_LIBS([sqrtf]. [m], [],
+  [AC_MSG_ERROR([Unable to find libm.])]
+)
 
 # Checks for header files.
 AC_FUNC_ALLOCA

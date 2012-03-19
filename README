@@ -15,12 +15,23 @@ file.
 ================================================================================
 1. TODO: refer files and directories on the tree
 
-2. TODO: Refer svn repository, https://projectos.fct.unl.pt/svn/di-cheetah/trunk/
-         Refer compilation instructions:
+2. TODO: Do we want to make the svn repository public?
+
+        In order to build and install Cheetah, you need the following
+        prerequisite packages (names may vary depending on your distribution or
+        Operating System):
+
+        - autoconf-archive
+        - autools-dev
+        - automake
+        - autoconf
+
+
+         Generic compilation instructions:
 	   $ mkdir m4 build
 	   $ autoreconf --verbose --force --install
            $ cd build
-	   $ ../configure CPPFLAGS=-I/home/luis/OpenCL/include LDFLAGS=-L/home/luis/OpenCL/lib --prefix=/opt/cheetah
+	   $ ../configure CPPFLAGS=-I/location/of/OpenCL/include LDFLAGS=-L/location/of/OpenCL/lib --prefix=/opt/cheetah
 	   $ make
 	   $ make install
-	   Program installed @ /opt/cheetah
+	   Cheetah will be installed @ /opt/cheetah
