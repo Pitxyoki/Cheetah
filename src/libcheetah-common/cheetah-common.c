@@ -82,7 +82,7 @@ void initializeComponent (char *name, char *shortname, int argc, char *argv[]) {
 
 }
 
-void finalizeComponent (char *name) {
+void finalizeComponent () {
 /*  char *space = calloc((4-strlen(name))+1, sizeof(char));
   for (int i = 0; i< 4-strlen(name); i++)
     space[i] = ' ';
@@ -92,9 +92,9 @@ void finalizeComponent (char *name) {
       perror("fprintf");
   shutdown = true;
   free(space);*/
-  cheetah_print(name, "Shutting down...");
+  cheetah_print("Shutting down...");
 
-
+  shutdown = true;
   if (pthread_mutex_lock(&shutdown_mutex))
       perror("pthread_mutex_lock");
   while(shutdown_threads > 0)
@@ -135,6 +135,25 @@ void guaranteedSleep(int msec) {
 }
 
 
+
+void finalizeThread() {
+
+  if (pthread_mutex_lock(&shutdown_mutex))
+    perror("pthread_mutex_lock");
+  shutdown_threads--;
+  if (shutdown) {
+    if (pthread_cond_signal(&shutdown_condition))
+      perror("pthread_cond_signal");
+    if (pthread_mutex_unlock(&shutdown_mutex))
+      perror("pthread_mutex_unlock");
+    //TODO: cleanup thread's structures?
+    pthread_exit(EXIT_SUCCESS);
+  }
+  else
+    if (pthread_mutex_unlock(&shutdown_mutex))
+      perror("pthread_mutex_unlock");
+}
+
 /* Blocking send that releases the CPU.
  * TODO: currently only uses MPI_COMM_WORLD.
  */
@@ -157,22 +176,9 @@ void sendMsg (void *buf, int count, MPI_Datatype datatype, int dest, int tag, MP
     guaranteedSleep(SLEEP_TIME);
   }
 
-
-  if (pthread_mutex_lock(&shutdown_mutex))
-    perror("pthread_mutex_lock");
-  shutdown_threads--;
   if (shutdown) {
-    if (pthread_cond_signal(&shutdown_condition))
-      perror("pthread_cond_signal");
-    if (pthread_mutex_unlock(&shutdown_mutex))
-      perror("pthread_mutex_unlock");
-    //TODO: cleanup thread's structures?
-    pthread_exit(EXIT_SUCCESS);
+    finalizeThread();
   }
-  else
-    if(pthread_mutex_unlock(&shutdown_mutex))
-      perror("pthread_mutex_unlock");
-
 }
 
 
@@ -198,22 +204,9 @@ void receiveMsg (void *buf, int count, MPI_Datatype datatype, int source, int ta
     guaranteedSleep(SLEEP_TIME);
   }
 
-
-  if (pthread_mutex_lock(&shutdown_mutex))
-    perror("pthread_mutex_lock");
-  shutdown_threads--;
   if (shutdown) {
-    if (pthread_cond_signal(&shutdown_condition))
-      perror("pthread_cond_signal");
-    if (pthread_mutex_unlock(&shutdown_mutex))
-      perror("pthread_mutex_unlock");
-    //TODO: cleanup thread's structures?
-    pthread_exit(EXIT_SUCCESS);
+    finalizeThread();
   }
-  else
-    if (pthread_mutex_unlock(&shutdown_mutex))
-      perror("pthread_mutex_unlock");
-
 }
 
 

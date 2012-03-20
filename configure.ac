@@ -34,7 +34,7 @@ AC_SEARCH_LIBS([clEnqueueNDRangeKernel], [OpenCL], [],
 )
 
 #m
-AC_SEARCH_LIBS([sqrtf]. [m], [],
+AC_SEARCH_LIBS([sqrtf], [m], [],
   [AC_MSG_ERROR([Unable to find libm.])]
 )
 

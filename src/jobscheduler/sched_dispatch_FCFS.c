@@ -47,18 +47,22 @@ void FIFOenqueue (Job *job) {
 }
 
 
-//Dequeues de job at the head of the queue
+//Dequeues the job at the head of the queue
 Job *dequeue () {
   Job *result;
   struct JQueueElem *oldHead;
 
   pthread_mutex_lock(&JQueMutex);
 
-  while (JQueueHead == NULL) {//if the queue is empty, wait until a job is added
+  //if the queue is empty wait until a job is added
+  while (JQueueHead == NULL && !shutdown) {//shutdown check... Ugly hack.
     assert(JQueueTail == NULL);
     pthread_cond_wait(&condition_cond, &JQueMutex);
   }
 
+  if (shutdown) {
+    finalizeThread();
+  }
 
   result = JQueueHead->job;
 

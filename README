@@ -25,13 +25,14 @@ file.
         - autools-dev
         - automake
         - autoconf
+        - libtool
 
 
          Generic compilation instructions:
-	   $ mkdir m4 build
-	   $ autoreconf --verbose --force --install
-           $ cd build
-	   $ ../configure CPPFLAGS=-I/location/of/OpenCL/include LDFLAGS=-L/location/of/OpenCL/lib --prefix=/opt/cheetah
-	   $ make
-	   $ make install
-	   Cheetah will be installed @ /opt/cheetah
+       $ mkdir m4 build
+       $ autoreconf --verbose --force --install
+       $ cd build
+       $ ../configure CPPFLAGS=-I/location/of/OpenCL/include LDFLAGS=-L/location/of/OpenCL/lib --prefix=/opt/cheetah
+       $ make
+       $ make install
+       Cheetah will be installed @ /opt/cheetah

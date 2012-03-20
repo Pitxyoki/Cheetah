@@ -293,7 +293,8 @@ typedef struct {
  ------------------------------*/
 
 void initializeComponent (char *name, char *shortname, int argc, char *argv[]);
-void finalizeComponent   (char *name);
+void finalizeComponent   ();
+void finalizeThread ();
 
 
 /* Sleep "exactly" msec milliseconds. */
