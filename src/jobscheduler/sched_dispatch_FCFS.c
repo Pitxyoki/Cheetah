@@ -19,6 +19,8 @@ struct JQueueElem {
 struct JQueueElem *JQueueHead = NULL;
 struct JQueueElem *JQueueTail = NULL;
 
+pthread_mutex_t JQueMutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t dequeue_condition = PTHREAD_COND_INITIALIZER;
 
 
 //TODO: keep variable with queue size for later polling by JM/other JSs?
