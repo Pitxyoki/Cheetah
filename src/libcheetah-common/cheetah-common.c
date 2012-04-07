@@ -128,6 +128,12 @@ void finalizeThread() {
  */
 void guaranteedSleep(int msec) {
   if (shutdown) {
+    if (pthread_mutex_lock(&shutdown_mutex))
+      perror("pthread_mutex_lock");
+    shutdown_threads--;
+    if (pthread_mutex_unlock(&shutdown_mutex))
+      perror("pthread_mutex_unlock");
+
     finalizeThread();
   }
 
