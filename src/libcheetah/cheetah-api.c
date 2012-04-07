@@ -20,25 +20,31 @@ void parseOpts (int argc, char *argv[]) {
 
   while ( getopt_long_only(argc, argv, "", long_options, &option_index) != -1) {
     //TODO: Sanitizing?
-    //TODO: Multiple Job Schedulers support
-    if (option_index == 1) //job scheduler
-      defaultSchedID = atoi(optarg);
-    else if (option_index == 3) //result collector
-      defaultRCID = atoi(optarg);
-    else if (option_index == 4) //global items
-      nGlobItems[0] = nGlobItems[1] = atoi(optarg);
-    else if (option_index == 5) //items per group
-      nItemsGroup[0] = nItemsGroup[1] = atoi(optarg);
-    else {
-      fprintf(stderr, "%s: unrecognised option '--%s'\n", argv[0], long_options[option_index].name);
-      exit (139);
+    //TODO: Support for multiple Job Schedulers
+    switch (option_index) {
+      case 1://job scheduler
+        defaultSchedID = atoi(optarg);
+        break;
+      case 3://result collector
+        defaultRCID = atoi(optarg);
+        break;
+      case 4: //global items
+        nGlobItems[0] = nGlobItems[1] = atoi(optarg);
+        break;
+      case 5: //items per group
+        nItemsGroup[0] = nItemsGroup[1] = atoi(optarg);
+        break;
+      default:
+        cheetah_print_error("%s: unrecognised option '--%s'\n", argv[0], long_options[option_index].name);
+        exit (139);
     }
     currarg++;
   }
 }
 
-
+pthread_t notificationWaiterThread;
 void *notificationWaiter ();
+
 
 void initDistribCL(int argc, char *argv[]) {
   int namelen;
@@ -51,13 +57,12 @@ void initDistribCL(int argc, char *argv[]) {
   MPI_Get_processor_name(processorname, &namelen);
 
 
-  printf("Job Manager Started at %s (rank %i). Thread support level: %i (asked %i). Setting up...\n", processorname, myid, prov, MPI_THREAD_MULTIPLE);
+  cheetah_print("Job Manager Started at %s (rank %i). Thread support level: %i (asked %i). Setting up...\n", processorname, myid, prov, MPI_THREAD_MULTIPLE);
 
   parseOpts(argc, argv);
 
 
-  pthread_t t;
-  pthread_create(&t, NULL, notificationWaiter, NULL);
+  pthread_create(&notificationWaiterThread, NULL, notificationWaiter, NULL);
 
 }
 
@@ -381,6 +386,8 @@ void *notificationWaiter (void *arg) {
   while (true) {
     int *recvNotif = malloc(sizeof (int));
     receiveMsg(recvNotif, 1, MPI_INT, MPI_ANY_SOURCE, COMM_TAG_RESULTREGISTER, MPI_STATUS_IGNORE);
+
+    //A new thread is created to treat each new result
     pthread_t notif_thread;
     pthread_create(&notif_thread, NULL, notifThread, recvNotif);
   }
@@ -462,6 +469,7 @@ void quitDistribCL () {
   for (int i = 1; i < size; i++)
     sendMsg(NULL, 0, MPI_BYTE, i, COMM_TAG_SHUTDOWN, MPI_STATUS_IGNORE);
 
+  pthread_cancel(notificationWaiterThread);
   cheetah_print_error("Goodbye.");
   MPI_Finalize();
 

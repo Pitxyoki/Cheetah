@@ -16,8 +16,6 @@ struct JQueueElem {
   Job *job;
 };
 
-pthread_mutex_t JQueMutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t condition_cond = PTHREAD_COND_INITIALIZER;
 struct JQueueElem *JQueueHead = NULL;
 struct JQueueElem *JQueueTail = NULL;
 
@@ -42,7 +40,7 @@ void FIFOenqueue (Job *job) {
 
   JQueueTail = newElem;
 
-  pthread_cond_signal(&condition_cond);
+  pthread_cond_signal(&dequeue_condition);
   pthread_mutex_unlock(&JQueMutex);
 }
 
@@ -55,9 +53,9 @@ Job *dequeue () {
   pthread_mutex_lock(&JQueMutex);
 
   //if the queue is empty wait until a job is added
-  while (JQueueHead == NULL && !shutdown) {//shutdown check... Ugly hack.
+  while (JQueueHead == NULL) {
     assert(JQueueTail == NULL);
-    pthread_cond_wait(&condition_cond, &JQueMutex);
+    pthread_cond_wait(&dequeue_condition, &JQueMutex);
   }
 
   if (shutdown) {

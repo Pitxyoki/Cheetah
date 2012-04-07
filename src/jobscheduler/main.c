@@ -58,7 +58,12 @@ int main (int argc, char *argv[]) {
 
 
   receiveMsg(NULL, 0, MPI_BYTE, MPI_ANY_SOURCE, COMM_TAG_SHUTDOWN, MPI_STATUS_IGNORE);
-  //TODO: cleanup PU structs on shutdown
+
+  //TODO: The Job Dispatcher thread is currently killed in a dirty way. This should be fixed sometime.
+  pthread_mutex_lock(&JQueMutex);
+  pthread_cond_signal(&dequeue_condition);
+  pthread_mutex_unlock(&JQueMutex);
+
   finalizeComponent();
   return EXIT_SUCCESS;
 }

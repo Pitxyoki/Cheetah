@@ -87,7 +87,7 @@
    AUXILIARY DEFINITIONS FOR THIS LIBRARY
  -----------------------------------------*/
 
-/* Only used on utils.c */
+/* Only used on libcheetah-common.c */
 #define SLEEP_TIME 1//in useconds
 
 
@@ -97,7 +97,7 @@
    COMMON VARIABLES TO ALL COMPONENTS
  -------------------------------------*/
 
-/* Only used on utils.c */
+/* Only used on libcheetah-common.c */
 pthread_mutex_t shutdown_mutex;
 pthread_cond_t shutdown_condition;
 bool shutdown;
@@ -120,7 +120,7 @@ extern struct option long_options[];
 
 /* Variables defined by each component */
 int myid;             //The MPI rank of the current process
-char *componentName; //The name of the component for the current process
+char *componentName;  //The name of the component for the current process
                       //JM, JS, PU-M or RC
 int shutdown_threads; //Number of total threads launched by the component.
                       //This is looked upon during the shutdown sequence to make
@@ -293,7 +293,7 @@ typedef struct {
  ------------------------------*/
 
 void initializeComponent (char *name, char *shortname, int argc, char *argv[]);
-void finalizeComponent   ();
+void finalizeComponent ();
 void finalizeThread ();
 
 

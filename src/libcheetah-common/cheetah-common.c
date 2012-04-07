@@ -6,13 +6,8 @@
  *
  *  First created on: 30 Mar 2010
  *      Author: Luís Miguel Picciochi de Oliveira (Pitxyoki@Gmail.com)
-
-
-
-
  *
- *  Created on: 5 Apr 2010
- *      Author: luis
+ *
  */
 
 
@@ -27,12 +22,12 @@
 
 /* The shutdown procedure works as follows:
  * A component can be shut down while it is doing anything except when it is
- * exchanging messages with other components. This is done only to avoid that
- * there be data hanging around in the mpi daemons after programs exit.
+ * exchanging messages with other components. This is done only to avoid
+ * data to be left hanging around in the mpi daemons after programs exit.
  */
 /**/
 pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t shutdown_condition = PTHREAD_COND_INITIALIZER;
+pthread_cond_t  shutdown_condition = PTHREAD_COND_INITIALIZER;
 bool shutdown = false;
 int shutdown_threads = 0;
 
@@ -95,23 +90,47 @@ void finalizeComponent () {
   cheetah_print("Shutting down...");
 
   shutdown = true;
-  if (pthread_mutex_lock(&shutdown_mutex))
+  if (pthread_mutex_lock(&shutdown_mutex)) {
       perror("pthread_mutex_lock");
-  while(shutdown_threads > 0)
+  }
+
+  while(shutdown_threads > 0) {
     if (pthread_cond_wait(&shutdown_condition, &shutdown_mutex))
         perror("pthread_cond_wait");
-  if (pthread_mutex_unlock(&shutdown_mutex))
+  }
+
+  if (pthread_mutex_unlock(&shutdown_mutex)) {
       perror("pthread_mutex_unlock");
+  }
 
 
   MPI_Finalize();
 }
 
+void finalizeThread() {
+
+  if (shutdown) {
+    if (pthread_cond_signal(&shutdown_condition)) {
+      perror("pthread_cond_signal");
+    }
+
+    //TODO: cleanup thread's structures?
+    pthread_exit(EXIT_SUCCESS);
+  }
+
+}
+
+
 
 /* Sleep "exactly" msec milliseconds.
+ * Threads can be finalized at this moment.
  * Source: http://cc.byexamples.com/2007/05/25/nanosleep-is-better-than-sleep-and-usleep/
  */
 void guaranteedSleep(int msec) {
+  if (shutdown) {
+    finalizeThread();
+  }
+
   struct timespec timeout0;
   struct timespec timeout1;
   struct timespec* tmp;
@@ -135,25 +154,6 @@ void guaranteedSleep(int msec) {
 }
 
 
-
-void finalizeThread() {
-
-  if (pthread_mutex_lock(&shutdown_mutex))
-    perror("pthread_mutex_lock");
-  shutdown_threads--;
-  if (shutdown) {
-    if (pthread_cond_signal(&shutdown_condition))
-      perror("pthread_cond_signal");
-    if (pthread_mutex_unlock(&shutdown_mutex))
-      perror("pthread_mutex_unlock");
-    //TODO: cleanup thread's structures?
-    pthread_exit(EXIT_SUCCESS);
-  }
-  else
-    if (pthread_mutex_unlock(&shutdown_mutex))
-      perror("pthread_mutex_unlock");
-}
-
 /* Blocking send that releases the CPU.
  * TODO: currently only uses MPI_COMM_WORLD.
  */
@@ -170,15 +170,18 @@ void sendMsg (void *buf, int count, MPI_Datatype datatype, int dest, int tag, MP
 
   MPI_Isend(buf, count, datatype, dest, tag, MPI_COMM_WORLD, &req);
 
-  while (!gotmsg && !shutdown) {
+  while (!gotmsg) {
 
     MPI_Test(&req, &gotmsg, status);
     guaranteedSleep(SLEEP_TIME);
   }
 
-  if (shutdown) {
-    finalizeThread();
-  }
+  if (pthread_mutex_lock(&shutdown_mutex))
+    perror("pthread_mutex_lock");
+  shutdown_threads--;
+  if (pthread_mutex_unlock(&shutdown_mutex))
+    perror("pthread_mutex_unlock");
+
 }
 
 
@@ -198,15 +201,18 @@ void receiveMsg (void *buf, int count, MPI_Datatype datatype, int source, int ta
 
   MPI_Irecv(buf, count, datatype, source, tag, MPI_COMM_WORLD, &req);
 
-  while (!gotmsg && !shutdown) {
+  while (!gotmsg) {
 
     MPI_Test(&req, &gotmsg, status);
     guaranteedSleep(SLEEP_TIME);
   }
 
-  if (shutdown) {
-    finalizeThread();
-  }
+  if (pthread_mutex_lock(&shutdown_mutex))
+    perror("pthread_mutex_lock");
+  shutdown_threads--;
+  if (pthread_mutex_unlock(&shutdown_mutex))
+    perror("pthread_mutex_unlock");
+
 }
 
 
