@@ -24,6 +24,7 @@ pthread_mutex_t sendResultMutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 bool JMSetup () {
+  //TODO: Clean/free these up on program termination
   JQueMutex      = calloc(PUInfoStruct.nPUs, sizeof(pthread_mutex_t));
   condition_cond = calloc(PUInfoStruct.nPUs, sizeof(pthread_cond_t));
   JQueueHead     = calloc(PUInfoStruct.nPUs, sizeof(struct JQueueElem *));
@@ -69,11 +70,15 @@ bool JMSetup () {
   MPI_Isend(&pos, 1, MPI_INT, defaultSchedID, COMM_TAG_PUONLINE, MPI_COMM_WORLD, NULL_REQUEST);
 
   if (debug_PUM)
-    fprintf(stderr,"PUM (%i):  sending my packed InfoStruct\n", myid);
+    cheetah_debug_print("Sending my packed InfoStruct\n");
+
+  int gotmsg = false;
+  MPI_Test(&shutdown_request, &gotmsg, MPI_STATUS_IGNORE);
+  if (gotmsg) {
+    return false;
+  }
 
   sendMsg(buff, pos, MPI_PACKED, defaultSchedID, COMM_TAG_PUONLINE, MPI_STATUS_IGNORE);
-
-  free(buff);
 
   /*** Latency test answer ***/
   for (int i = 0; i < NUM_JS_LATENCY_TESTS; i++) {
@@ -81,7 +86,14 @@ bool JMSetup () {
     MPI_Isend (NULL, 0, MPI_BYTE, defaultSchedID, COMM_TAG_PUONLINE, MPI_COMM_WORLD, NULL_REQUEST);
   }
 
-  printf("PUM (%i): Answered latency test.\n", myid);
+  free(buff);
+
+  cheetah_info_print("Answered latency test.\n");
+
+  MPI_Test(&shutdown_request, &gotmsg, MPI_STATUS_IGNORE);
+  if (gotmsg) {
+    return false;
+  }
 
   /*** Throughput test answer ***/
   char buffLat[PUM_THROUGHPUT_TEST_SIZE / sizeof(char)];
@@ -89,7 +101,7 @@ bool JMSetup () {
   receiveMsg(buffLat, PUM_THROUGHPUT_TEST_SIZE, MPI_BYTE, defaultSchedID, COMM_TAG_PUONLINE, MPI_STATUS_IGNORE);
   sendMsg(NULL, 0, MPI_BYTE, defaultSchedID, COMM_TAG_PUONLINE, MPI_STATUS_IGNORE);
 
-  printf("PUM (%i): Answered throughput test. registered with Job Scheduler.\n", myid);
+  cheetah_info_print("Answered throughput test. registered with Job Scheduler.\n");
 
   //Now we should be able to receive test jobs, run them and return results
   return true;
@@ -407,7 +419,7 @@ bool initializeCLBuffers (JobToPUM *job) {
   int devID = job->runOn;
   cl_context *context = PUInfoStruct.PUsContexts[devID];
 
-  cl_device_id *device = calloc(1, sizeof(cl_device_id));
+  cl_device_id device;// = calloc(1, sizeof(cl_device_id));
 
   size_t deviceListSize;
   status = clGetContextInfo(*context, CL_CONTEXT_DEVICES, 0, NULL, &deviceListSize);
@@ -417,7 +429,7 @@ bool initializeCLBuffers (JobToPUM *job) {
   }
 
   //Get the corresponding device (TODO: currently only one)
-  status = clGetContextInfo(*context, CL_CONTEXT_DEVICES, sizeof(cl_device_id), device, NULL);
+  status = clGetContextInfo(*context, CL_CONTEXT_DEVICES, sizeof(cl_device_id), &device, NULL);
   if (status != CL_SUCCESS) {
     fprintf(stderr, "clGetContextInfo failed (%i).\n", status);
     return false;
@@ -460,8 +472,8 @@ bool initializeCLBuffers (JobToPUM *job) {
   // Load CL source, build CL program object, create CL kernel object
   /////////////////////////////////////////////////////////////////
   /* create a CL program using the kernel source */
-  cl_program *program = malloc(sizeof(cl_program));
-  PUInfoStruct.currKernels[devID] = malloc(sizeof(cl_kernel));
+  cl_program program;// = malloc(sizeof(cl_program));
+//  PUInfoStruct.currKernels[devID] = malloc(sizeof(cl_kernel));
 
   const char *sourceStr = job->taskSource;
   if (debug_PUM)
@@ -473,7 +485,7 @@ bool initializeCLBuffers (JobToPUM *job) {
   size_t sourceSize[] = { strlen(sourceStr) };
   assert(sourceSize[0] == job->taskSourceSize-1);
 
-  *program = clCreateProgramWithSource(*context, 1, &sourceStr, sourceSize, &status);
+  program = clCreateProgramWithSource(*context, 1, &sourceStr, sourceSize, &status);
   if (status != CL_SUCCESS) {
     fprintf(stderr, "clCreateProgramWithSource failed.\n");
     return false;
@@ -481,37 +493,40 @@ bool initializeCLBuffers (JobToPUM *job) {
 
   /* create a cl program executable for all the devices specified */
   //currently only one device supported
-  status = clBuildProgram(*program, 1, device, NULL, NULL, NULL);
+  status = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
 
   size_t ret_val_size;
-  clGetProgramBuildInfo(*program, *device, CL_PROGRAM_BUILD_LOG, 0, NULL, &ret_val_size);
+  clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, 0, NULL, &ret_val_size);
 
 
-  char *build_log = calloc(ret_val_size, sizeof(char));
-  clGetProgramBuildInfo(*program, *device, CL_PROGRAM_BUILD_LOG, ret_val_size, build_log, NULL);
+  char *build_log = calloc(ret_val_size+1, sizeof(char));
+  clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, ret_val_size, build_log, NULL);
 
   build_log[ret_val_size] = '\0';
 
   if (!SILENT){
-  if (strlen(build_log) > 0)
-    fprintf(stderr, "PUM (%i): buildlog:\n>>>\n%s\n<<<\n__END OF BUILDLOG__\n",myid, build_log);
-  else
-    fprintf(stderr, "PUM (%i): NO BUILD LOG\n", myid);
+    if (strlen(build_log) > 0) {
+      fprintf(stderr, "PUM (%i): buildlog:\n>>>\n%s\n<<<\n__END OF BUILDLOG__\n",myid, build_log);
+    } else {
+      fprintf(stderr, "PUM (%i): NO BUILD LOG\n", myid);
+    }
   }
+  free(build_log);
+
   if (status != CL_SUCCESS) {
     fprintf(stderr, "clBuildProgram failed (%i).\n", status);
     return false;
   }
 
   /* get a kernel object handle for a kernel with the given name */
-  PUInfoStruct.currKernels[devID] = clCreateKernel(*program, job->startingKernel, &status);
+  PUInfoStruct.currKernels[devID] = clCreateKernel(program, job->startingKernel, &status);
   if (status != CL_SUCCESS) {
     fprintf(stderr, "clCreateKernel failed.\n");
     return false;
   }
 
-  free (device);
-  free (program); //TODO: check if this should be persistent
+//  free (device);
+//  free (program); //TODO: check if this should be persistent
 
   return true;
 
@@ -576,6 +591,9 @@ bool execJob (JobToPUM *job) {
     fprintf(stderr, "Enqueueing Kernel!\n");
 
   status = clEnqueueNDRangeKernel(*(PUInfoStruct.PUsCmdQs[devID]), PUInfoStruct.currKernels[devID], nDim, NULL, globalItems, localItems, 0, NULL, &events[0]);
+  free(globalItems);
+  free(localItems);
+
   if (status != CL_SUCCESS) {
     fprintf(stderr, "clEnqueueNDRangeKernel failed (%i).\n", status);
     return false;
@@ -671,6 +689,7 @@ bool execJob (JobToPUM *job) {
     }
     //free(PUInfoStruct.argBuffers[devID][i]);//this is freed automatically by the OpenCL runtime
   }
+  free(PUInfoStruct.argBuffers[devID]);
   if (debug_PUM)
     fprintf(stderr, "ReadBuffer events released\n");
 

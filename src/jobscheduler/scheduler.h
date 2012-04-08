@@ -19,8 +19,8 @@
 #define SCHEDULING_PREDICTIVE 3
 #define SCHED_WORKLOAD_POLICY SCHEDULING_PREDICTIVE
 
-pthread_mutex_t JQueMutex;
-pthread_cond_t dequeue_condition;
+extern pthread_mutex_t JQueMutex;
+extern pthread_cond_t dequeue_condition;
 
 
 struct PUList{

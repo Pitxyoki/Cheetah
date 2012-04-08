@@ -45,7 +45,6 @@ int main (int argc, char *argv[]) {
   }
 
 
-  receiveMsg(NULL, 0, MPI_BYTE, MPI_ANY_SOURCE, COMM_TAG_SHUTDOWN, MPI_STATUS_IGNORE);
   finalizeComponent();
   return EXIT_SUCCESS;
 }

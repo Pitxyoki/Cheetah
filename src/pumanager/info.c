@@ -78,10 +78,16 @@ bool getLocalInfo () {
 
     PUInfoStruct.nPUs += numDevices;
     PUInfoStruct.availablePUs = realloc (PUInfoStruct.availablePUs, (PUInfoStruct.nPUs) * sizeof(PUProperties));
-    PUInfoStruct.PUsContexts = realloc (PUInfoStruct.PUsContexts, (PUInfoStruct.nPUs) * sizeof(cl_context *));
-    PUInfoStruct.PUsCmdQs = realloc(PUInfoStruct.PUsCmdQs, (PUInfoStruct.nPUs) * sizeof(cl_command_queue *));
-    PUInfoStruct.argBuffers = realloc(PUInfoStruct.argBuffers, (PUInfoStruct.nPUs) * sizeof(cl_mem *));
-    PUInfoStruct.currKernels = realloc(PUInfoStruct.currKernels, (PUInfoStruct.nPUs) * sizeof(cl_kernel));
+    PUInfoStruct.PUsContexts  = realloc (PUInfoStruct.PUsContexts,  (PUInfoStruct.nPUs) * sizeof(cl_context *));
+    PUInfoStruct.PUsCmdQs     = realloc (PUInfoStruct.PUsCmdQs,     (PUInfoStruct.nPUs) * sizeof(cl_command_queue *));
+    PUInfoStruct.argBuffers   = realloc (PUInfoStruct.argBuffers,   (PUInfoStruct.nPUs) * sizeof(cl_mem *));
+    PUInfoStruct.currKernels  = realloc (PUInfoStruct.currKernels,  (PUInfoStruct.nPUs) * sizeof(cl_kernel));
+
+    if (PUInfoStruct.availablePUs == NULL || PUInfoStruct.PUsContexts == NULL || PUInfoStruct.PUsCmdQs == NULL ||
+        PUInfoStruct.argBuffers   == NULL || PUInfoStruct.currKernels == NULL) {
+      cheetah_print_error("Could not allocate memory while getting local information for this PU-M. Aborting.");
+      return false;
+    }
 
     //Create a context properties array for this platform. This will be used to create contextes for each of its devices
     cl_context_properties cps[3] = { CL_CONTEXT_PLATFORM, (cl_context_properties) platforms[i], 0 };
@@ -160,6 +166,7 @@ bool getLocalInfo () {
 
       /***
        * Now create this device's context and command queue
+       * TODO: Clean/free this up on program termination
        ***/
       PUInfoStruct.PUsContexts[PUInfoStruct.nPUs-numDevices + j] = malloc(sizeof(cl_context));
       *(PUInfoStruct.PUsContexts[PUInfoStruct.nPUs-numDevices + j]) = clCreateContext(cps, 1, &(devices[j]), NULL, NULL, &status);
@@ -603,8 +610,9 @@ bool runPUTests () {
       job->jobID = jobID;
       switch (jobID) {
         case 0:
-          if(!createLowProcJob(job))
+          if(!createLowProcJob(job)) {
             return false;
+          }
           break;
         case 1:
           //if (!createHighProcJob(job))
@@ -623,7 +631,7 @@ bool runPUTests () {
 
       if (jobID == 2) {
         //for bandwidth testing, we only care about buffer transfers
-	//start timer
+        //start timer
         if (gettimeofday(&start, NULL)) {
           perror("gettimeofday");
           return false;
@@ -632,11 +640,9 @@ bool runPUTests () {
         //initialize buffers
         if (!initializeCLBuffers(job))
           return false;
-      }
-     
-      else {
-	if (!initializeCLBuffers(job))
-	  return false;
+      } else {
+        if (!initializeCLBuffers(job))
+          return false;
 
         //start timer
         if (gettimeofday(&start, NULL)) {
@@ -675,10 +681,9 @@ bool runPUTests () {
 
       cleanup(job);
 
-    cheetah_info_print("Test job %i DONE.", jobID);
+      cheetah_info_print("Test job %i DONE.", jobID);
 
     }
-
   }
   return true;
 }

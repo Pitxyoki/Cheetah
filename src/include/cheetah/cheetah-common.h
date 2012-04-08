@@ -126,7 +126,7 @@ int shutdown_threads; //Number of total threads launched by the component.
                       //This is looked upon during the shutdown sequence to make
                       //sure all threads have finished before exiting the main
                       //program
-
+MPI_Request shutdown_request;
 
 
 /*------------------------

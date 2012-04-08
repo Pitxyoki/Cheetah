@@ -63,6 +63,7 @@ struct option long_options[] = {
  ------------------------------*/
 
 
+
 void initializeComponent (char *name, char *shortname, int argc, char *argv[]) {
   componentName = shortname;
   int prov;
@@ -74,7 +75,7 @@ void initializeComponent (char *name, char *shortname, int argc, char *argv[]) {
   MPI_Get_processor_name(processorname, &namelen);
 
   printf("%s started at %s (rank %i). Thread support level: %i (asked %i). Setting up internal state...\n", name, processorname, myid, prov, MPI_THREAD_MULTIPLE);
-
+  MPI_Irecv(NULL, 0, MPI_BYTE, MPI_ANY_SOURCE, COMM_TAG_SHUTDOWN, MPI_COMM_WORLD, &shutdown_request);
 }
 
 void finalizeComponent () {
@@ -87,6 +88,13 @@ void finalizeComponent () {
       perror("fprintf");
   shutdown = true;
   free(space);*/
+  int gotmsg = false;
+  while (!gotmsg) {
+
+    MPI_Test(&shutdown_request, &gotmsg, MPI_STATUS_IGNORE);
+    guaranteedSleep(SLEEP_TIME);
+  }
+
   cheetah_print("Shutting down...");
 
   shutdown = true;
@@ -237,8 +245,9 @@ void cheetah_print_stream (FILE *stream, char *message, va_list *ap) {
       return;
     }
 
-    for (int i = 0; i < 5-strlen(componentName); i++)
+    for (int i = 0; i < 5-strlen(componentName); i++) {
       space[i] = ' ';
+    }
     space[5-strlen(componentName)] = '\0';
   }
   else { // componentName == 'XPTOABCD'
@@ -254,8 +263,9 @@ void cheetah_print_stream (FILE *stream, char *message, va_list *ap) {
 
   //2. determine the size of the format string
   stringSize = strlen(componentName); //JM, JS, PUM, RC
-  if (stringSize < 5)
+  if (stringSize < 5) {
     stringSize = 4;
+  }
 
   stringSize += strlen(space); // ' '
   stringSize += 8;             // '(0000): ' support up to 9999 MPI IDs (...heh)
@@ -282,6 +292,8 @@ void cheetah_print_stream (FILE *stream, char *message, va_list *ap) {
     return;
   }
 
+  free(space);
+  free(formatString);
 }
 
 void cheetah_print (char *message, ...) {

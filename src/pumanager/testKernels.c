@@ -459,7 +459,7 @@ void checkJobResults (JobToPUM *job) {
     case 1: {//highProcJob
 //      assert(*((int *)job->arguments[0]) == 1048576);
       //mandelbrot
-      fprintf(stderr, "verifying mandelbrot\n");
+      cheetah_info_print("Verifying mandelbrot.\n");
       int MAXITER = 524288;
       int rgb[MAXITER][3];
       int i,j;
@@ -502,8 +502,9 @@ void checkJobResults (JobToPUM *job) {
         fputc(rgb[p[i]][1], outputfractal);
         fputc(rgb[p[i]][2], outputfractal);
       }
+      //TODO: checksum the saved file
       unlink(fractfname);
-      close(fd);
+      fclose(outputfractal);
       cheetah_debug_print("Deleted fractal file successfully");
 
       break;
@@ -515,7 +516,7 @@ void checkJobResults (JobToPUM *job) {
       break;
   }
 
-  fprintf(stderr,"PUM (%i): Test job executed successfully\n", myid);
+  cheetah_info_print("Test job executed successfully\n");
   /* 
    else {//FFT
     assert(job->probID == myid);
