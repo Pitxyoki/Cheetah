@@ -237,7 +237,7 @@ void cheetah_print_stream (FILE *stream, char *message, va_list *ap) {
   int stringSize;
 
 
-  /* 1. Determine the amount of white space to use */
+  // 1. Determine the amount of white space to use
   if (strlen(componentName) < 5) {
     space = calloc((5-strlen(componentName))+1, sizeof(char));
     if (space == NULL) {

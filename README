@@ -22,7 +22,7 @@ file.
         Operating System):
 
         - autoconf-archive
-        - autools-dev
+        - autotools-dev
         - automake
         - autoconf
         - libtool

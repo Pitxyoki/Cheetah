@@ -26,27 +26,23 @@ void *resultReceiver() {
     gotmsg = false;
     dataSize = 0;
 
-    if (!SILENT)
-    printf("RC  (%i): Result Receiver waiting for results...\n", myid);
+    cheetah_debug_print("Result Receiver waiting for results...\n");
 
     /*** Receive a result ***/
     receiveMsg(&dataSize, 1, MPI_INT, MPI_ANY_SOURCE, COMM_TAG_RESULTSEND, &status);
 
-    if (debug_RC)
-      fprintf(stderr,"RC  (%i): Result Receiver received result SIZES..., source: %i, size: %i\n", myid, status.MPI_SOURCE, dataSize);
+    cheetah_debug_print("Result Receiver received result SIZES..., source: %i, size: %i\n", status.MPI_SOURCE, dataSize);
 
     sendMsg(NULL, 0, MPI_BYTE, status.MPI_SOURCE, COMM_TAG_RESULTSEND, MPI_STATUS_IGNORE);
 
     char *receivedData = malloc(dataSize);
     receiveMsg(receivedData, dataSize, MPI_PACKED, status.MPI_SOURCE, COMM_TAG_RESULTSEND, MPI_STATUS_IGNORE);
 
-    if (debug_RC)
-      fprintf(stderr,"RC  (%i): Result Receiver received RESULTS - going to unpack them\n", myid);
+    cheetah_debug_print("Result Receiver received RESULTS - going to unpack them\n");
 
 
     MPI_Unpack(receivedData, dataSize, &pos,        &(job->probID),                   1, MPI_INT, MPI_COMM_WORLD);
     MPI_Unpack(receivedData, dataSize, &pos,         &(job->jobID),                   1, MPI_INT, MPI_COMM_WORLD);
-
     MPI_Unpack(receivedData, dataSize, &pos, &(job->nTotalResults),                   1, MPI_INT, MPI_COMM_WORLD);
 
     job->resultSizes = calloc(job->nTotalResults, sizeof(int));
@@ -62,8 +58,7 @@ void *resultReceiver() {
     MPI_Unpack(receivedData, dataSize, &pos,   &(job->returnStatus),                  1, MPI_INT,  MPI_COMM_WORLD);
 
     free(receivedData);
-    if (!SILENT)
-    printf("RC: Result received by RC!\n");
+    cheetah_debug_print("RC: Result received by RC!\n");
 
     if (debug_RC) {
       printJobResults(job);
@@ -71,7 +66,7 @@ void *resultReceiver() {
 
 
     if (!storeJobRes(job)) {
-      fprintf(stderr, "RC  (%i): THIS SHOULDN'T HAVE HAPPENED.\n", myid);
+      cheetah_print_error("THIS SHOULDN'T HAVE HAPPENED.\n");
       return NULL;
     }
 
@@ -100,20 +95,25 @@ int compare(const void *pa, const void *pb) {
       jobIDA = jobA->jobID,
       jobIDB = jobB->jobID;
 
-  if (debug_RC)
-    fprintf(stderr, "RC  (%i): comparing probA: %i, jobA: %i, probB: %i, jobB: %i\n", myid, probA, jobIDA, probB, jobIDB);
-  if (probA < probB)
+  if (debug_RC) {
+    cheetah_debug_print("comparing probA: %i, jobA: %i, probB: %i, jobB: %i\n", probA, jobIDA, probB, jobIDB);
+  }
+
+  if (probA < probB) {
     return -1;
-  if (probA > probB)
+  }
+  if (probA > probB) {
     return 1;
+  }
   if (probA == probB) {
-    if (jobIDA < jobIDB)
+    if (jobIDA < jobIDB) {
       return -1;
-    if (jobIDA > jobIDB)
+    }
+    if (jobIDA > jobIDB) {
       return 1;
+    }
   }
   return 0;
-
 }
 
 
@@ -129,8 +129,9 @@ cl_bool storeJobRes (JobResults *job) {
 
   pthread_mutex_unlock(&resultsMutex);
 
-  if ((*(JobResults **) existing) != job) //the job was already on the tree
+  if ((*(JobResults **) existing) != job) {//the job was already on the tree
     return CL_FALSE;
+  }
   return CL_TRUE;
 }
 
@@ -148,18 +149,20 @@ JobResults *getJobRes (int probID, int jobID) {
 
   pthread_mutex_lock(&resultsMutex);
   if (debug_RC)
-    fprintf(stderr, "RC  (%i): going to tfind prob: %i, job: %i \n", myid, testJob->probID, testJob->jobID);
+    cheetah_debug_print("Going to tfind prob: %i, job: %i \n", testJob->probID, testJob->jobID);
 
   result = tfind(testJob, &rootJob, compare);
   pthread_mutex_unlock(&resultsMutex);
   free(testJob);
   if (result == NULL) {
-    if (debug_RC)
-      fprintf(stderr, "RC  (%i): probID %i, jobID %i not found\n", myid, probID, jobID);
+    if (debug_RC) {
+      cheetah_debug_print("probID %i, jobID %i not found\n", probID, jobID);
+    }
     return NULL;
   }
-  if (debug_RC)
-    fprintf(stderr, "RC  (%i): tdeleted prob: %i, job: %i \n", myid, (*result)->probID, (*result)->jobID);
+  if (debug_RC) {
+    cheetah_debug_print("tdeleted prob: %i, job: %i \n", (*result)->probID, (*result)->jobID);
+  }
 
 
   return *result;
@@ -176,8 +179,7 @@ void *resultSender() {
     pos = 0;
     gotmsg = false;
 
-    if (!SILENT)
-    printf("RC  (%i): Result Sender waiting for requests...\n", myid);
+    cheetah_debug_print("Result Sender waiting for requests...\n");
 
     /*** Receive a result request ***/
     receiveMsg(&jobID, 1, MPI_INT, MPI_ANY_SOURCE, COMM_TAG_RESULTGET , &status);
@@ -186,8 +188,7 @@ void *resultSender() {
 
     //If the request corresponds to a job that isn't present, we don't have any results to send
     if (jobResults == NULL) {
-      if (!SILENT)
-      fprintf(stderr,"RC  (%i): REQUESTED A NOT-AVAILABLE RESULT\n", myid);
+      cheetah_debug_print_error("REQUESTED A NOT-AVAILABLE RESULT\n");
       int error = -1;
       sendMsg(&error, 1, MPI_INT, status.MPI_SOURCE, COMM_TAG_RESULTGET, MPI_STATUS_IGNORE);
       continue;
@@ -197,8 +198,9 @@ void *resultSender() {
 
     /*** Preparing the data transfer ***/
     cl_uint totalResultsSize = 0;
-    for (cl_uint i = 0; i<jobResults->nTotalResults; i++ )
+    for (cl_uint i = 0; i<jobResults->nTotalResults; i++ ) {
       totalResultsSize += jobResults->resultSizes[i];
+    }
 
     int sizeofData = sizeof(int)*3
         + sizeof(int)*jobResults->nTotalResults
@@ -213,27 +215,30 @@ void *resultSender() {
 
     MPI_Pack(jobResults->resultSizes,   jobResults->nTotalResults, MPI_INT, buff, sizeofData, &pos, MPI_COMM_WORLD);
 
-    for (cl_uint i = 0; i < jobResults->nTotalResults; i++ )
+    for (cl_uint i = 0; i < jobResults->nTotalResults; i++ ) {
       MPI_Pack(jobResults->results[i], jobResults->resultSizes[i], MPI_BYTE,buff, sizeofData, &pos, MPI_COMM_WORLD);
+    }
 
     MPI_Pack(&(jobResults->returnStatus),                       1, MPI_INT, buff, sizeofData, &pos, MPI_COMM_WORLD);
 
     /*** Sending ***/
     //MPI_Isend(&pos,   1, MPI_INT,    status.MPI_SOURCE, COMM_TAG_RESULTGET, MPI_COMM_WORLD, &NULL_REQ);
-    sendMsg(&pos, 1, MPI_INT, status.MPI_SOURCE, COMM_TAG_RESULTGET, MPI_STATUS_IGNORE);
+    sendMsg(&pos,   1,    MPI_INT, status.MPI_SOURCE, COMM_TAG_RESULTGET, MPI_STATUS_IGNORE);
     sendMsg(buff, pos, MPI_PACKED, status.MPI_SOURCE, COMM_TAG_RESULTGET, MPI_STATUS_IGNORE);
 
     free(buff);
 
     receiveMsg(NULL, 0, MPI_BYTE, status.MPI_SOURCE, COMM_TAG_RESULTGET, MPI_STATUS_IGNORE);
 
-    if(debug_RC)
+    cheetah_debug_print("just sent a result.\n");
+    if(debug_RC) {
       printJobResults(jobResults);
-    if (!SILENT)
-    printf("RC  (%i): just sent a result.\n", myid);
+      cheetah_debug_print("That was it.\n");
+    }
 
-    for (int i = 0; i < jobResults->nTotalResults; i++)
+    for (int i = 0; i < jobResults->nTotalResults; i++) {
       free(jobResults->results[i]);
+    }
 
     free(jobResults->results);
     free(jobResults->resultSizes);
@@ -268,20 +273,25 @@ int compareRegist (const void *pa, const void *pb) {
       jobIDA = regA->jobID,
       jobIDB = regB->jobID;
 
-  if (debug_RC)
-    fprintf(stderr, "RC  (%i): comparing (registrations) probA: %i, jobA: %i, probB: %i, jobB: %i\n", myid, probA, jobIDA, probB, jobIDB);
-  if (probA < probB)
+  if (debug_RC) {
+    cheetah_debug_print("comparing (registrations) probA: %i, jobA: %i, probB: %i, jobB: %i\n", probA, jobIDA, probB, jobIDB);
+  }
+
+  if (probA < probB) {
     return -1;
-  if (probA > probB)
+  }
+  if (probA > probB) {
     return 1;
+  }
   if (probA == probB) {
-    if (jobIDA < jobIDB)
+    if (jobIDA < jobIDB) {
       return -1;
-    if (jobIDA > jobIDB)
+    }
+    if (jobIDA > jobIDB) {
       return 1;
+    }
   }
   return 0;
-
 }
 
 void *resultNotifRegister () {
@@ -292,8 +302,8 @@ void *resultNotifRegister () {
   while (true) {
     receiveMsg(&jobID, 1, MPI_INT, MPI_ANY_SOURCE, COMM_TAG_RESULTREGISTER, &status);
 
-    if (!SILENT)
-    fprintf(stderr,"RC  (%i): Received request to notify rank %i for jobID %i\n", myid, status.MPI_SOURCE, jobID);
+
+    cheetah_debug_print("Received request to notify rank %i for jobID %i\n", status.MPI_SOURCE, jobID);
     re = malloc(sizeof(registeredElem));
     re->probID = status.MPI_SOURCE;
     re->jobID = jobID;
@@ -303,8 +313,9 @@ void *resultNotifRegister () {
     pthread_mutex_unlock(&registerMutex);
 
     //If someone had already asked to be notified, we will notify him again now
-    if (getJobRes(re->probID, re->jobID) != NULL) //only if we already have the results
+    if (getJobRes(re->probID, re->jobID) != NULL) {//only if we already have the results
       notifyRank(status.MPI_SOURCE, jobID);
+    }
   }
 }
 
@@ -316,8 +327,9 @@ void notifyRank (int rank, int jobID) {
   testRegist.probID = rank;
   testRegist.jobID = jobID;
 
-  if (!SILENT)
-  fprintf(stderr, "RC  (%i): Asked to notify rank %i for jobID %i\n", myid, rank, jobID);
+
+  cheetah_debug_print("Asked to notify rank %i for jobID %i\n", rank, jobID);
+
   registeredElem *result = NULL;
 
   pthread_mutex_lock(&registerMutex);
@@ -325,16 +337,16 @@ void notifyRank (int rank, int jobID) {
 
   MPI_Status status;
   if (result != NULL) {
-    if (!SILENT)
-    fprintf(stderr, "RC  (%i): going to notify rank %i for jobID %i\n", myid, rank, jobID);
+    cheetah_debug_print("going to notify rank %i for jobID %i\n", rank, jobID);
+
     sendMsg(&jobID, 1, MPI_INT, rank, COMM_TAG_RESULTREGISTER, &status);
-    tdelete(result, &rootJob, compareRegist);
-    if (!SILENT)
-    fprintf(stderr, "RC  (%i): notified rank %i for jobID %i\n", myid, rank, jobID);
+    tdelete(result, &rootRegist, compareRegist);
+
+    cheetah_debug_print("notified rank %i for jobID %i\n", rank, jobID);
   }
-  else
-    if (!SILENT)
-    fprintf(stderr, "RC  (%i): DID NOT notify rank %i for jobID %i\n", myid, rank, jobID);
+  else {
+    cheetah_debug_print_error("DID NOT notify rank %i for jobID %i\n", rank, jobID);
+  }
 
   pthread_mutex_unlock(&registerMutex);
 }
