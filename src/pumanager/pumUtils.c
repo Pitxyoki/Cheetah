@@ -260,7 +260,7 @@ void *receiveJobs() {
      If the queue is full, return failure result ***/
 
     if (enqueue(job) == false) {
-      fprintf(stderr, "PUM (%i):  PROGRAMMING ERROR (on the scheduler's side): Received a job for an unsupported PU (%ui). I only have %i PUs. The JS should have prevented this.\n", myid, job->runOn, PUInfoStruct.nPUs);
+      cheetah_print_error("PROGRAMMING ERROR (on the scheduler's side): Received a job for an unsupported PU (%ui). I only have %i PUs. The JS should have prevented this.\n", job->runOn, PUInfoStruct.nPUs);
 
       jobNResult jnr;
       jnr.job = job;
@@ -319,13 +319,6 @@ void *JobConsumer (void *device) {
 
       jnr.res = JOB_RETURN_STATUS_FAILURE;
       resultPrepareAndSend(&jnr);
-      /*
-      pthread_t t;
-      if (pthread_create (&t, NULL, sendResults, &jnr)) {
-        perror("pthread_create");
-        MPI_Finalize();
-        exit(EXIT_FAILURE);
-      }*/
       continue;
     }
 
@@ -707,12 +700,27 @@ void resultPrepareAndSend (jobNResult *jnrMayDisappear) {
   jnr->res = jnrMayDisappear->res;
 
   pthread_t t;
-  if (pthread_create (&t, NULL, sendResults, jnr)) {
+  pthread_attr_t attrs;
+  if (pthread_attr_init(&attrs) != 0) {
+    perror("pthread_attr_init");
+    MPI_Finalize();
+    exit(EXIT_FAILURE);
+  }
+  if (pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED) != 0) {
+    perror("pthread_attr_setdetachstate");
+    MPI_Finalize();
+    exit(EXIT_FAILURE);
+  }
+  if (pthread_create (&t, &attrs, sendResults, jnr)) {
     perror("pthread_create");
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
-
+  if (pthread_attr_destroy(&attrs) != 0) {
+    perror("pthread_attr_destroy");
+    MPI_Finalize();
+    exit(EXIT_FAILURE);
+  }
 }
 
 

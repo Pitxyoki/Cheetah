@@ -383,13 +383,34 @@ void *notifThread (void *arg) {
 }
 
 void *notificationWaiter (void *arg) {
+  pthread_t notif_thread;
+  pthread_attr_t attrs;
+  if (pthread_attr_init(&attrs) != 0) {
+    perror("pthread_attr_init");
+    MPI_Finalize();
+    exit(EXIT_FAILURE);
+  }
+  if (pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED) != 0) {
+    perror("pthread_attr_setdetachstate");
+    MPI_Finalize();
+    exit(EXIT_FAILURE);
+  }
+
   while (true) {
     int *recvNotif = malloc(sizeof (int));
     receiveMsg(recvNotif, 1, MPI_INT, MPI_ANY_SOURCE, COMM_TAG_RESULTREGISTER, MPI_STATUS_IGNORE);
 
     //A new thread is created to treat each new result
-    pthread_t notif_thread;
-    pthread_create(&notif_thread, NULL, notifThread, recvNotif);
+    if (pthread_create(&notif_thread, &attrs, notifThread, recvNotif) != 0) {
+      perror("pthread_create");
+      MPI_Finalize();
+      exit(EXIT_FAILURE);
+    }
+  }
+  if (pthread_attr_destroy(&attrs) != 0) {
+    perror("pthread_attr_destroy");
+    MPI_Finalize();
+    exit(EXIT_FAILURE);
   }
 }
 
@@ -466,8 +487,9 @@ void quitDistribCL () {
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
 
-  for (int i = 1; i < size; i++)
+  for (int i = 1; i < size; i++) {
     sendMsg(NULL, 0, MPI_BYTE, i, COMM_TAG_SHUTDOWN, MPI_STATUS_IGNORE);
+  }
 
   pthread_cancel(notificationWaiterThread);
   cheetah_print_error("Goodbye.");
