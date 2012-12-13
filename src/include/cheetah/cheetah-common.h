@@ -17,6 +17,7 @@
 #include <CL/cl.h>
 #include <mpi/mpi.h>
 
+#include <float.h>
 #include <getopt.h>
 #include <stdio.h>
 #include <string.h>
