@@ -28,7 +28,7 @@
 /**/
 pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  shutdown_condition = PTHREAD_COND_INITIALIZER;
-bool shutdown = false;
+bool cheetah_shutdown = false;
 int shutdown_threads = 0;
 
 
@@ -86,7 +86,7 @@ void finalizeComponent () {
 
   if (fprintf(stderr, "%s%s(%i): Shutting down...\n", name, space, myid) < 0)
       perror("fprintf");
-  shutdown = true;
+  cheetah_shutdown = true;
   free(space);*/
   int gotmsg = false;
   while (!gotmsg) {
@@ -97,7 +97,7 @@ void finalizeComponent () {
 
   cheetah_print("Shutting down...");
 
-  shutdown = true;
+  cheetah_shutdown = true;
   if (pthread_mutex_lock(&shutdown_mutex)) {
       perror("pthread_mutex_lock");
   }
@@ -117,7 +117,7 @@ void finalizeComponent () {
 
 void finalizeThread() {
 
-  if (shutdown) {
+  if (cheetah_shutdown) {
     if (pthread_cond_signal(&shutdown_condition)) {
       perror("pthread_cond_signal");
     }
@@ -135,7 +135,7 @@ void finalizeThread() {
  * Source: http://cc.byexamples.com/2007/05/25/nanosleep-is-better-than-sleep-and-usleep/
  */
 void guaranteedSleep(int msec) {
-  if (shutdown) {
+  if (cheetah_shutdown) {
     if (pthread_mutex_lock(&shutdown_mutex))
       perror("pthread_mutex_lock");
     shutdown_threads--;
@@ -403,7 +403,7 @@ void printJob (Job *printThis) {
   printf("Starting kernel name: %s\n", printThis->startingKernel);
   printf("Task source size: %i\n", printThis->taskSourceSize);
 
-  printf("Task source ommited (actual size: %ul+1).\n", strlen(printThis->taskSource));
+  printf("Task source ommited (actual size: %zi+1).\n", strlen(printThis->taskSource));
 
   printf("Number of arguments: %i\n", printThis->nTotalArgs);
 
@@ -432,7 +432,7 @@ void printJobToPUM (JobToPUM *printThis) {
   printf("Task source size: %i\n", printThis->taskSourceSize);
 
 //  printf("Task source: %s\n", printThis.taskSource);
-  printf("Task source ommited (actual size: %ul+1).\n", strlen(printThis->taskSource));
+  printf("Task source ommited (actual size: %zi+1).\n", strlen(printThis->taskSource));
   printf("Number of arguments: %i\n", printThis->nTotalArgs);
 
   for (cl_uint i = 0; i< printThis->nTotalArgs; i++) {

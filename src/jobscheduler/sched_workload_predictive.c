@@ -317,7 +317,7 @@ double scorePU (struct PUList *PU, JobToPUM *jtp) {
 
 PUMStruct *pickPUWith(int nPossible, cl_device_type *possibleList, JobToPUM *jtp) {
 
-  cheetah_info_print("Going to pick PU for jtp number %i (nPossible PUs: %i.", myid, jtp->jobID, nPossible);
+  cheetah_info_print("Going to pick PU for jtp number %i (nPossible PUs: %i.", jtp->jobID, nPossible);
 
 
   int i = 0;
@@ -428,7 +428,7 @@ PUMStruct *pickPUWith(int nPossible, cl_device_type *possibleList, JobToPUM *jtp
 
     resultPU->allCategsSeen =        realloc(resultPU->allCategsSeen,        sizeof(int) *(resultPU->nCategsSeen));
     resultPU->nTimesUsed =           realloc(resultPU->nTimesUsed,           sizeof(int) *(resultPU->nCategsSeen));
-    resultPU->categAverageDuration = realloc(resultPU->categAverageDuration, sizeof(int) *(resultPU->nCategsSeen));
+    resultPU->categAverageDuration = realloc(resultPU->categAverageDuration, sizeof(double) *(resultPU->nCategsSeen));
     resultPU->alreadyMeasured =      realloc(resultPU->alreadyMeasured,      sizeof(bool)*(resultPU->nCategsSeen));
     if (pthread_mutex_unlock(&(resultPU->accessMutex)))
       perror( "pthread_mutex_unlock");

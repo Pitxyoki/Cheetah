@@ -8,6 +8,16 @@
 #ifndef CHEETAH_H_
 #define CHEETAH_H_
 
+
+/* Use the notation extern "C" so the libraries can be used with C and C++. 
+ * This statement prevents the C++ from name mangling and thus creating 
+ * "unresolved symbols" when linking.
+ */
+#ifdef __cplusplus  
+extern "C" {
+#endif
+
+
 #include <cheetah/cheetah-common.h>
 
 
@@ -42,10 +52,10 @@ void setJobCategory (Job *job, int category);
 //If this is not used, we will try to use the device's maximum (or default?) number of threads
 void setDimensions (Job *job, int nDim, int *nItemsPerDim, int *nItemsPerGroup);
 
-void loadSourceFile (Job *job, char *taskSourceFile);
+void loadSourceFile (Job *job, const char *taskSourceFile);
 
 //startingKernel _MUST_ be null-terminated ('\0')
-void setStartingKernel (Job *job, char *startingKernel);
+void setStartingKernel (Job *job, const char *startingKernel);
 
 
 /**
@@ -91,5 +101,9 @@ JobResults *getResults (Job *job);
 
 void deleteResults (JobResults *JR);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CHEETAH_H_ */

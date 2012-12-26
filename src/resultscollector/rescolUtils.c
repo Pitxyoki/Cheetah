@@ -247,6 +247,9 @@ void *resultSender() {
     tdelete(jobResults, &rootJob, compare);
     pthread_mutex_unlock(&resultsMutex);
 
+    free(jobResults);
+
+    deleteNotification(status.MPI_SOURCE, jobID);
   }
 }
 
@@ -349,4 +352,24 @@ void notifyRank (int rank, int jobID) {
   }
 
   pthread_mutex_unlock(&registerMutex);
+}
+
+// Eliminate register for notification to mantain memory footprint low
+void deleteNotification(int rank, int jobID) {
+  registeredElem testRegist;
+  testRegist.probID = rank;
+  testRegist.jobID = jobID;
+
+  registeredElement *result = NULL;
+
+  pthread_mutex_lock(&registerMutex);
+  result = tfind(&testRegist, &rootRegist, compareRegist);
+
+  if (result != NULL) {
+    tdelete(result, &rootRegist, compareRegist);
+
+    free(result);
+  }
+  pthread_mutex_unlock(&registerMutex);
+
 }

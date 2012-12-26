@@ -43,6 +43,7 @@ void *resultNotifRegister ();
 //This will only do so if the rank asked to be notified.
 void notifyRank (int rank, int jobID);
 
-
+// Eliminate register for notification to mantain memory footprint low
+void deleteNotification(int rank, int jobID);
 
 #endif /* RC_H_ */

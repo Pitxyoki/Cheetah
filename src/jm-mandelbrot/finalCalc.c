@@ -4,7 +4,7 @@
 */
 
 
-#include "distribCL.h"
+#include <cheetah/cheetah.h>
 
 int NJOBS = 1;
 

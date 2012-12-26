@@ -567,7 +567,7 @@ bool execJob (JobToPUM *job) {
   for (int i = 0; i < job->nTotalArgs; i++ ) {
     status = clSetKernelArg(PUInfoStruct.currKernels[devID], i, sizeof(cl_mem), &(PUInfoStruct.argBuffers[devID][i]));
     if (status != CL_SUCCESS) {
-      fprintf(stderr, "clSetKernelArg failed. (inputBuffers[%i])\n", i);
+      fprintf(stderr, "clSetKernelArg failed. (inputBuffers[%i]) [%d]\n", i, status);
       return false;
     }
   }
@@ -745,6 +745,7 @@ void *sendResults (void *job_and_result) {
 
   if (!SILENT)
     printf("PUM (%i):  Sending results to RC at %i\n", myid, job->returnTo);
+
   if (retStatus == JOB_RETURN_STATUS_SUCCESS) {
     for (cl_uint i = 0; i < job->nTotalArgs; i++) {
       if ((job->argTypes[i] == OUTPUT) ||
@@ -816,7 +817,18 @@ void *sendResults (void *job_and_result) {
 
   pthread_mutex_unlock(&sendResultMutex);
 
+
   cleanup(job);
+
+  for (int i = 0 ; i < currResultIndex; i++) {
+    free(jobResults.results[i]);
+  }
+
+  free(jobResults.results);
+  free(jobResults.resultSizes);
+
+  free(jnr);
+
   return NULL;
 }
 

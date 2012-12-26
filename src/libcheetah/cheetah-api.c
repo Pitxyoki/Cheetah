@@ -177,7 +177,7 @@ void setDimensions (Job *job, int nDim, int *nItemsPerDim, int *nItemsPerGroup) 
 
   job->nDimensions = nDim;
   for (int i = 0; i < nDim; i++) {
-    assert(nItemsPerDim[i] > 0 && nItemsPerGroup > 0);
+    assert(nItemsPerDim[i] > 0 && nItemsPerGroup[i] > 0);
     assert((nItemsPerDim[i] % nItemsPerGroup[i]) == 0);
 
     job->nItems[i] = nItemsPerDim[i];
@@ -187,7 +187,7 @@ void setDimensions (Job *job, int nDim, int *nItemsPerDim, int *nItemsPerGroup) 
 
 
 
-void loadSourceFile (Job *job, char *taskSourceFile) {
+void loadSourceFile (Job *job, const char *taskSourceFile) {
   job->taskSource = fileToString(taskSourceFile);
   if (job->taskSource == NULL) {
     cheetah_print_error("FILE NOT FOUND! Please verify kernel file path: %s.", taskSourceFile);
@@ -197,7 +197,7 @@ void loadSourceFile (Job *job, char *taskSourceFile) {
 }
 
 //startingKernel _MUST_ be null-terminated ('\0')
-void setStartingKernel (Job *job, char *startingKernel) {
+void setStartingKernel (Job *job, const char *startingKernel) {
   job->startingNameSize = strlen(startingKernel)+1;
   job->startingKernel = calloc(job->startingNameSize, sizeof(char));
 

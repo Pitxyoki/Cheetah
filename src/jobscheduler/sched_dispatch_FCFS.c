@@ -60,7 +60,7 @@ Job *dequeue () {
     pthread_cond_wait(&dequeue_condition, &JQueMutex);
   }
 
-  if (shutdown) {
+  if (cheetah_shutdown) {
     finalizeThread();
   }
 

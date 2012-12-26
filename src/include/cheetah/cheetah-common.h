@@ -9,6 +9,24 @@
 #ifndef CHEETAH_COMMON_H_
 #define CHEETAH_COMMON_H_
 
+
+
+#ifdef __cplusplus
+
+#define MPICH_SKIP_MPICXX 1
+/* mpicxx.h contains the MPI C++ binding.  In the mpi.h.in file, this
+   include is in an autoconf variable in case the compiler is a C++
+   compiler but MPI was built without the C++ bindings */
+
+
+/* Use the notation extern "C" so the libraries can be used with C and C++.
+ * This statement prevents the C++ from name mangling and thus creating
+ * "unresolved symbols" when linking.
+ */
+extern "C" {
+#endif
+
+
 #define _GNU_SOURCE
 
 /*--------------
@@ -101,7 +119,7 @@
 /* Only used on libcheetah-common.c */
 pthread_mutex_t shutdown_mutex;
 pthread_cond_t shutdown_condition;
-bool shutdown;
+bool cheetah_shutdown;
 
 
 /*** WORKAROUNDS (TODO: ASSERT THEY ARE STILL NEEDED) ***/
@@ -343,6 +361,10 @@ char *fileToString     (const char *filename);
 int timeval_subtract (struct timeval *result, struct timeval *x, struct timeval * y);
 
 
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* CHEETAH_COMMON_H_ */
